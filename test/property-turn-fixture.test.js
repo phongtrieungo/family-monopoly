@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import { expect, test } from 'bun:test';
 
 import { createPropertyTurnFixture } from './fixtures/property-turn.js';
 
@@ -7,14 +6,14 @@ test('property-turn fixtures start from the same state without sharing mutable i
   const first = createPropertyTurnFixture();
   const second = createPropertyTurnFixture();
 
-  assert.deepEqual(first, second);
+  expect(first).toEqual(second);
 
   first.turn.seats[0].cash = 0;
   first.board.spaces[0].labelKey = 'changed';
   first.diceByScenario['AC-04'][0] = 6;
 
-  assert.deepEqual(second, createPropertyTurnFixture());
-  assert.notDeepEqual(first, second);
+  expect(second).toEqual(createPropertyTurnFixture());
+  expect(first).not.toEqual(second);
 });
 
 test('scripted dice reach the intended affordable purchase and rival rent spaces', () => {
@@ -22,21 +21,21 @@ test('scripted dice reach the intended affordable purchase and rival rent spaces
   const activeSeat = turn.seats.find((seat) => seat.id === turn.activeSeatId);
 
   const landingSpace = (dice) => {
-    assert.equal(dice.length, 2);
+    expect(dice).toHaveLength(2);
     for (const die of dice) {
-      assert.ok(Number.isInteger(die) && die >= 1 && die <= 6);
+      expect(Number.isInteger(die) && die >= 1 && die <= 6).toBe(true);
     }
     const position = activeSeat.position + dice[0] + dice[1];
     return board.spaces[position];
   };
 
   const purchase = landingSpace(diceByScenario['AC-04']);
-  assert.equal(purchase.type, 'property');
-  assert.equal(turn.ownership[purchase.id], undefined);
-  assert.ok(activeSeat.cash >= board.economy[purchase.economyId].price);
+  expect(purchase.type).toBe('property');
+  expect(turn.ownership[purchase.id]).toBeUndefined();
+  expect(activeSeat.cash).toBeGreaterThanOrEqual(board.economy[purchase.economyId].price);
 
   const rental = landingSpace(diceByScenario['AC-06']);
-  assert.equal(rental.type, 'property');
-  assert.equal(turn.ownership[rental.id], 'guest');
-  assert.ok(activeSeat.cash >= board.economy[rental.economyId].rent);
+  expect(rental.type).toBe('property');
+  expect(turn.ownership[rental.id]).toBe('guest');
+  expect(activeSeat.cash).toBeGreaterThanOrEqual(board.economy[rental.economyId].rent);
 });

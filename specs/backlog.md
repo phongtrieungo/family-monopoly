@@ -1,6 +1,6 @@
 # Implementation backlog and verification
 
-The prototype path runs B-01 through B-06. The B-01 harness and fixtures are documented in [ADR-005](adr/README.md#adr-005--nodejs-domain-harness). Evidence and clearance work can proceed independently.
+The prototype path runs B-01 through B-06. The B-01 harness and fixtures are documented in [ADR-005](adr/README.md#adr-005--bun-domain-harness). Evidence and clearance work can proceed independently.
 
 | ID | Slice | Depends on | Exit criteria |
 | --- | --- | --- | --- |

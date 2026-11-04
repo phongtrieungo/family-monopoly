@@ -10,10 +10,10 @@ This repository contains design documents, acceptance scenarios and a domain tes
 
 ## Development
 
-With Node.js 24 or later and npm, run the harness from the repository root.
+With Bun 1.4.4, run the harness from the repository root.
 
 ```sh
-npm test
+bun test
 ```
 
-The harness has zero package dependencies. It checks fresh synthetic fixture state and scripted dice for AC-04 (purchase) and AC-06 (rent). The Gherkin scenarios are acceptance contracts for the later reducer and application. See [ADR-005](specs/adr/README.md#adr-005--nodejs-domain-harness) for the stack decision.
+The harness has zero package dependencies. It checks fresh synthetic fixture state and scripted dice for AC-04 (purchase) and AC-06 (rent). The Gherkin scenarios are acceptance contracts for the later reducer and application. See [ADR-005](specs/adr/README.md#adr-005--bun-domain-harness) for the stack decision.

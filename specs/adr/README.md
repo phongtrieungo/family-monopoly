@@ -34,12 +34,12 @@ These records establish prototype boundaries. ADR-005 selects the domain harness
 
 **Consequences.** Both device classes require browser acceptance coverage. Content updates are reviewable independently, and verified rules can be introduced through explicit profile versioning.
 
-## ADR-005 · Node.js domain harness
+## ADR-005 · Bun domain harness
 
 **Status.** Accepted for B-01.
 
 **Context.** The first implementation slice needs a reproducible command to exercise deterministic fixtures before the board and reducer exist.
 
-**Decision.** Use Node.js 24 or later, native JavaScript ES modules and the built-in `node:test` and `node:assert/strict` modules. Use npm scripts as the entry point. Keep domain modules independent of Node-specific APIs so they can be exercised without a room server and shared with browser tooling where useful. Start with fresh synthetic fixture state and scripted dice pairs. The authoritative server will supply live randomness when the reducer is integrated.
+**Decision.** Use Bun 1.4.4 and native JavaScript ES modules. Use the built-in `bun:test` runner and assertions. Keep domain modules independent of runtime-specific APIs so they can be exercised without a room server and shared with browser tooling where useful. Start with fresh synthetic fixture state and scripted dice pairs. The authoritative server will supply live randomness when the reducer is integrated.
 
-**Consequences.** The harness requires Node and npm, with zero package dependencies and no build step. Use explicit validation for inputs at domain boundaries. A compile-time type system was considered and deferred for this slice. Select the web framework, persistence, transport implementation and hosting when the corresponding backlog items need them.
+**Consequences.** The harness requires Bun, with zero package dependencies and no build step. Use explicit validation for inputs at domain boundaries. A compile-time type system was considered and deferred for this slice. Select the web framework, persistence, transport implementation and hosting when the corresponding backlog items need them.
