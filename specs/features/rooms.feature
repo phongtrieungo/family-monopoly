@@ -22,3 +22,4 @@ Feature: Invite-only lobby
     When a visitor submits an invalid invite
     Then the visitor sees an invalid invite message
     And the visitor receives no room snapshot
+    And an invite alone cannot read a member snapshot or event history

@@ -14,6 +14,7 @@ Feature: Preserve authoritative decisions across refresh and retries
     When the seat retries the same command ID and payload with the original revision
     Then it receives the original result
     And the property and cash changes occur only once
+    And reusing the command ID for a different command is rejected
 
   @AC-09
   Scenario: A nonactive seat cannot roll
