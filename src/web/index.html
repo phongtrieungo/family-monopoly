@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phố Nhà Mình</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div><span class="eyebrow">TRÒ CHƠI GIA ĐÌNH</span><h1>Phố Nhà Mình</h1></div>
+    <span class="badge">Bản thử nghiệm · dữ liệu giả lập</span>
+  </header>
+  <main>
+    <p id="connection" role="status" hidden></p>
+    <p id="error" role="alert" hidden></p>
+    <section id="entry" class="panel entry">
+      <span class="eyebrow">2–4 NGƯỜI CHƠI</span>
+      <h2>Cùng chơi một ván</h2>
+      <form id="entry-form">
+        <label>Tên hiển thị <input name="name" required maxlength="32" autocomplete="nickname"></label>
+        <label>Mã mời <input name="invite" maxlength="64" autocomplete="off" spellcheck="false"></label>
+        <div class="buttons"><button value="create">Tạo phòng</button><button value="join" class="secondary">Vào phòng</button></div>
+      </form>
+    </section>
+    <section id="lobby" class="panel" hidden>
+      <h2 id="lobby-heading" tabindex="-1">Phòng chờ</h2>
+      <div id="invite-panel" hidden>
+        <label>Liên kết mời <input id="invite-link" readonly></label>
+        <button id="copy-invite" class="secondary">Sao chép liên kết</button>
+      </div>
+      <ul id="roster"></ul>
+      <div id="lobby-actions" class="buttons"></div>
+    </section>
+    <section id="match" class="match" hidden>
+      <section class="panel board-panel" aria-labelledby="board-heading">
+        <span class="eyebrow">BÀN CHƠI</span>
+        <h2 id="board-heading" tabindex="-1">Một vòng quanh phố</h2>
+        <div id="board" class="board" aria-hidden="true"></div>
+        <details id="space-details"><summary>Danh sách ô</summary><ol id="spaces"></ol></details>
+        <h3>Người chơi</h3>
+        <ul id="players"></ul>
+      </section>
+      <aside class="match-side">
+        <section class="panel actions" aria-labelledby="turn-heading">
+          <span class="eyebrow">LƯỢT CHƠI</span>
+          <h2 id="turn-heading" tabindex="-1"></h2>
+          <p id="turn-context"></p>
+          <div id="turn-actions"></div>
+        </section>
+        <section class="panel activity"><h2>Diễn biến</h2><ol id="history"></ol></section>
+      </aside>
+    </section>
+    <p id="announcement" class="sr-only" role="status"></p>
+  </main>
+</body>
+</html>

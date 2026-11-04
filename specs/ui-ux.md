@@ -10,3 +10,7 @@
 The current actor, phase and required action appear together. Show price and consequence before buying or bidding. Confirm commitment via the server result and preserve context when an action is rejected. Show waiting status to other seats, announce accepted outcomes, and restore focus after dialogs. Use accessible names, clear focus indicators, keyboard operability and text or icons alongside colors. Support reduced motion. Use 360 CSS pixels and desktop widths as prototype review targets, with a 44 CSS pixel target for primary touch controls.
 
 Vietnamese-first copy uses localization keys and Unicode with diacritics. Review terms for cash, rent, bid, decline and end turn with a fluent reader before wider testing. Use fixture values with a visible prototype label.
+
+## B-05 prototype
+
+The local browser client polls for an authorized snapshot and committed events by revision. It keeps the seat credential in session storage for refresh. A failed sync keeps the last board and action prompt visible while disabling submissions. Successful sync restores the controls. When an action disappears after a committed transition, focus moves to the turn heading. The activity list and live announcement describe accepted dice, purchases, rent, and auction outcomes in Vietnamese.
