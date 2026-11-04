@@ -16,3 +16,9 @@ The server applies one accepted command at a time per room. Automatic effects se
 The first slice uses one roll per turn in synthetic fixtures and affordable rent only. Later profiles add doubles, jail, cards, debt and victory. Their precise transitions depend on R-02 and R-05 through R-09. A continuation records the effect source and remaining work so a payment or card cannot be applied twice. Jail arrival and an ordinary visit must be distinct state. Bid ordering follows committed revision order, and an accepted high bidder cannot pass while leading. No unrelated spending is available during an auction.
 
 Invariants: one active turn, at most one pending decision, each property has one owner or belongs to the bank, player cash never becomes negative, and one accepted payment or settlement generates one ledger entry. Rejected commands leave game state unchanged.
+
+## B-02 reducer boundary
+
+The synthetic reducer accepts committed turn state, an actor and a command. The authoritative roll is a separate input supplied by the caller. The reducer returns the next state and events together, including one ledger event per purchase or rent transfer. A rejected command throws before returning any state or events. Room revision checks, atomic persistence and command deduplication belong to the room layer.
+
+B-02 supports Roll, Buy and EndTurn. An unaffordable rent landing is outside the supported fixture range and is rejected without committing the roll. Moving past start wraps the position without a cash award in this synthetic profile. Decline and auction arrive in B-03.
