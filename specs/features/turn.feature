@@ -13,9 +13,11 @@ Feature: Resolve a property turn on the synthetic board
     Given the active seat has landed on an unowned property
     When the active seat declines the purchase
     And the other seat submits an affordable opening bid
-    And the active seat passes in the auction
+    Then cash and title remain unchanged
+    When the active seat passes in the auction
     Then the other seat owns the property at its accepted bid price
     And the auction settles once
+    And the original active seat can end the turn
 
   @AC-06
   Scenario: Affordable rent is paid before ending the turn
