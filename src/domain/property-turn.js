@@ -8,7 +8,8 @@ export function createPropertyTurnReducer(board, rules) {
   return function reduceTurn(state, command, { dice } = {}) {
     const activeIndex = state.seats.findIndex((seat) => seat.id === state.activeSeatId);
     const activeSeat = state.seats[activeIndex];
-    if (!activeSeat || command.actorId !== activeSeat.id) {
+    const isAuctionAction = command.type === 'Bid' || command.type === 'Pass';
+    if (!activeSeat || (!isAuctionAction && command.actorId !== activeSeat.id)) {
       throw new Error('Only the active seat can act');
     }
 
@@ -50,12 +51,26 @@ export function createPropertyTurnReducer(board, rules) {
         break;
       }
 
-      case 'Buy': {
-        if (state.phase !== 'AwaitPurchase') throw new Error('Buy is not allowed in this phase');
+      case 'Buy':
+      case 'Decline': {
+        if (state.phase !== 'AwaitPurchase') {
+          throw new Error(`${command.type} is not allowed in this phase`);
+        }
         const space = spaces[activeSeat.position];
         if (space?.type !== 'property' || Object.hasOwn(state.ownership, space.id)) {
           throw new Error('Space is unavailable for purchase');
         }
+        if (command.type === 'Decline') {
+          next.phase = 'Auction';
+          next.auction = {
+            spaceId: space.id,
+            eligibleSeatIds: state.seats.map((seat) => seat.id),
+            highBid: null,
+          };
+          events.push({ type: 'AuctionStarted', spaceId: space.id });
+          break;
+        }
+
         const { price } = economy[space.economyId];
         if (activeSeat.cash < price) throw new Error('Insufficient cash to buy property');
 
@@ -63,6 +78,51 @@ export function createPropertyTurnReducer(board, rules) {
         next.seats[activeIndex] = { ...activeSeat, cash: activeSeat.cash - price };
         next.ownership = { ...state.ownership, [space.id]: activeSeat.id };
         events.push({ type: 'PropertyBought', spaceId: space.id, from: activeSeat.id, amount: price });
+        break;
+      }
+
+      case 'Bid':
+      case 'Pass': {
+        if (state.phase !== 'Auction') {
+          throw new Error(`${command.type} is not allowed in this phase`);
+        }
+        const { actorId, amount } = command;
+        const bidder = state.seats.find((seat) => seat.id === actorId);
+        const { spaceId, eligibleSeatIds, highBid } = state.auction;
+        if (!bidder || !eligibleSeatIds.includes(actorId)) {
+          throw new Error('Seat is not eligible for this auction');
+        }
+
+        const auction = { ...state.auction };
+        if (command.type === 'Bid') {
+          if (!Number.isSafeInteger(amount) || amount <= (highBid?.amount ?? 0)) {
+            throw new Error('Bid must exceed the current price in whole units');
+          }
+          if (amount > bidder.cash) throw new Error('Insufficient cash to bid');
+          auction.highBid = { seatId: actorId, amount };
+          events.push({ type: 'AuctionBidAccepted', spaceId, seatId: actorId, amount });
+        } else {
+          if (highBid?.seatId === actorId) throw new Error('The leading bidder cannot pass');
+          auction.eligibleSeatIds = eligibleSeatIds.filter((seatId) => seatId !== actorId);
+          events.push({ type: 'AuctionPassed', spaceId, seatId: actorId });
+        }
+
+        const winner = auction.highBid;
+        const remaining = auction.eligibleSeatIds.length;
+        if (winner && remaining === 1) {
+          next.seats = state.seats.map((seat) => seat.id === winner.seatId
+            ? { ...seat, cash: seat.cash - winner.amount }
+            : seat);
+          next.ownership = { ...state.ownership, [spaceId]: winner.seatId };
+          delete next.auction;
+          events.push({ type: 'AuctionSettled', spaceId, from: winner.seatId, amount: winner.amount });
+        } else if (remaining === 0) {
+          delete next.auction;
+          events.push({ type: 'AuctionEndedWithoutBid', spaceId });
+        } else {
+          next.phase = 'Auction';
+          next.auction = auction;
+        }
         break;
       }
 
