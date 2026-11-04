@@ -16,7 +16,7 @@ The prototype holds seats and pending decisions during disconnects. It resumes w
 
 ## B-04 server boundary
 
-The prototype service runs in one process with synchronous room transactions. Its local file store atomically replaces the room records, command receipts and revisioned event history together. Keep the store in a private server directory. Use one process per store file. Browser transport, multi-process storage, and retention remain open.
+The prototype service runs in one process with synchronous room transactions. Its local file store atomically replaces the room records, command receipts and revisioned event history together. Keep the store in a private server directory. Use one process per store file. The B-05 local HTTP adapter serves commands and polls for snapshots and events. It marks a seat disconnected after fifteen seconds without a poll. Multi-process storage and retention remain open.
 
 Creation returns the invite and host session. Joining returns a separate guest session. Reconnect returns the caller's seat ID and latest snapshot. A connection change advances the revision only when the connected flag changes. A transport adapter is responsible for tracking live connections and calling disconnect when a seat's last connection closes.
 

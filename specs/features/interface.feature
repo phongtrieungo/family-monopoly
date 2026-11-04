@@ -7,6 +7,7 @@ Feature: Play from desktop and phone
     When the player opens the space list using <input>
     Then the current destination is identified by name and position
     And the current legal action is reachable using <input>
+    And a lost connection leaves the action visible and disables submission until sync
 
     Examples:
       | view    | input    |
