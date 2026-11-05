@@ -1,6 +1,6 @@
 # GAME-SPEC-001 · Product requirements and game design
 
-The planning baseline selects a Vietnam board, modern art direction, desktop and mobile targets, an official-rules approach and private rooms. The details below define the first prototype. Proposed digital policies are recorded separately from edition rules.
+The planning baseline selects an original Vietnam board theme, modern art direction, desktop and mobile targets, Hasbro Classic C1009 rules and private rooms. The owner selected C1009 with original Vietnamese presentation and translated UI on 2026-11-06. See the [edition review](research/edition-review.md) for the exact document and open content gates. The details below define the first prototype. Proposed digital policies are recorded separately from edition rules.
 
 ## Product and game design
 
