@@ -10,7 +10,7 @@ The prototype path runs B-01 through B-06. The B-01 harness and fixtures are doc
 | B-04 | Lobby, revisions and reconnect | B-01 | AC-01–03 and AC-07–09 pass. Race, session and redaction checks pass. |
 | B-05 | Responsive Vietnamese-first client | B-02–04 | AC-10 passes at desktop and phone sizes. Include focus and connection-state checks. |
 | B-06 | Two-device internal prototype | B-05 | Complete GAME-SPEC-001 prototype acceptance with [reproducible fixtures and evidence](prototype-acceptance.md). |
-| B-07 | Edition research and content review | — | Pin edition and evidence for R-01–09, resolve discrepancies, and record asset decisions. |
+| B-07 | Edition research and content review | — | Pin edition and evidence for R-01–09, resolve discrepancies, and record asset decisions. Content baseline and shortage procedures recorded in the [B-07 review](research/edition-review.md) and [original content profile](research/content-profile.md). Wider-review gates remain open. |
 | B-08 | Full-match rule coverage | B-06, B-07 | Add approved rules and Gherkin for jail, cards, trading, debt, bankruptcy and winner. |
 | B-09 | Wider playtest gate | B-08 | Review branding, localization, accessibility, retention and match-abandonment policy. |
 
