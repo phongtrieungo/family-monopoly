@@ -18,11 +18,11 @@ The current screen presents many controls and long lists like a web administrati
 
 ## Technology recommendation
 
-**Recommend Phaser for the animated board and game presentation, with accessible HTML controls and information alongside it.** Phaser provides a 2D browser game scene and supports WebGL and Canvas rendering, which fit tokens moving around a board and timed visual effects. Use Phaser's renderer selection with a Canvas fallback; verify the specific pinned version and fallback behavior during the first technical slice. Some Phaser effects require WebGL, so essential information and interaction cannot depend on those effects. [Phaser overview](https://docs.phaser.io/phaser/getting-started/what-is-phaser) · [renderer setup](https://docs.phaser.io/phaser/getting-started/making-your-first-phaser-game) · [effect limitations](https://docs.phaser.io/phaser/concepts/fx).
+**The owner selected Phaser for the animated board and game presentation, with native accessible HTML controls and information alongside it.** Phaser provides a 2D browser game scene and supports WebGL and Canvas rendering, which fit tokens moving around a board and timed visual effects. Use Phaser's renderer selection with a Canvas fallback; verify the specific pinned version and fallback behavior during the first technical slice. Some Phaser effects require WebGL, so essential information and interaction cannot depend on those effects. [Phaser overview](https://docs.phaser.io/phaser/getting-started/what-is-phaser) · [renderer setup](https://docs.phaser.io/phaser/getting-started/making-your-first-phaser-game) · [effect limitations](https://docs.phaser.io/phaser/concepts/fx).
 
 React with SVG is a credible alternative for a primarily interface-driven board: React organizes controls into components, and SVG offers scalable, inspectable elements. It would integrate naturally with accessible DOM interactions, but the team would build more of the scene, animation timing and visual effects itself. React plus a separate WebGL layer would add another renderer and synchronization boundary. [React component model](https://react.dev/learn) · [SVG in HTML](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_in_HTML).
 
-For the current zero-dependency Bun/ES-module project, start with **Phaser plus the existing native HTML/JavaScript interface**, rather than adopting React at the same time. Add an explicit dependency, lockfile, Bun build/serve workflow and license/provenance record in the technical slice. Do not require CDN access. The recommendation is provisional until the first playable spike demonstrates readable layout, performance, fallback rendering and accessible equivalents; document the accepted decision in a new ADR if it passes. If it fails, record the evidence and reassess React/SVG before building subsequent slices.
+For the current zero-dependency Bun/ES-module project, start with **Phaser plus the existing native HTML/JavaScript interface**, rather than adopting React at the same time. Add an explicit dependency, lockfile, Bun build/serve workflow and license/provenance record in the technical slice. Do not require CDN access. The ST-201 spike recorded its comparison and the owner selected this approach; [ADR-007](../adr/ADR-007-renderer-proposal.md) is accepted. Further full-board performance, accessibility and physical-device review remain open.
 
 ### Authority and accessibility boundary
 
@@ -32,7 +32,7 @@ Canvas content needs equivalent HTML: a keyboard-operable space list with occupa
 
 ## Proposed implementation slices
 
-These are planning labels, not assigned backlog IDs. Convert only the next selected slice into an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
+The [story knowledge base](EPIC-002-stories.md) records detailed scope, dependencies, acceptance evidence and current status for ST-201–ST-206. The slice labels are not assigned B-series backlog IDs. Select only the next slice for an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
 
 | Slice | Player story and scope | Acceptance evidence |
 | --- | --- | --- |

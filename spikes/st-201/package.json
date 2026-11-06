@@ -1,0 +1,15 @@
+{
+  "name": "family-monopoly-renderer-spike",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "phaser": "3.90.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "scripts": {
+    "build": "bun build ./src/index.js --outdir ./public/build --target browser --minify --define 'process.env.NODE_ENV=\"production\"'",
+    "start": "bun run build && bun server.js",
+    "verify": "bun run build && bun verify.js"
+  }
+}
