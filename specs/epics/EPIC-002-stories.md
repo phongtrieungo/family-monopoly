@@ -10,7 +10,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | --- | --- | --- | --- | --- |
 | [ST-201](#st-201--visual-direction-and-renderer-spike) | S1 · Visual direction and renderer spike | Done | B-08, B-10 | [Sample and comparison](ST-201-comparison.md); [ADR-007 accepted](../adr/ADR-007-renderer-proposal.md) |
 | [ST-202](#st-202--game-table-and-setup) | S2 · Game table and setup | Done | ST-201 decision | B-12 · implementation complete; owner manually validated the running game |
-| [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Proposed | ST-202 | Not started |
+| [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Done | ST-202 | B-13 · focused acceptance passed; [PR #15](https://github.com/phongtrieungo/family-monopoly/pull/15) |
 | [ST-204](#st-204--cards-payments-and-auctions) | S4 · Cards, payments and auctions | Proposed | ST-203 | Not started |
 | [ST-205](#st-205--manage-trade-and-recover) | S5 · Manage, trade and recover | Proposed | ST-204 | Not started |
 | [ST-206](#st-206--finish-and-family-acceptance) | S6 · Finish and family acceptance | Proposed | ST-205 | Not started |
@@ -70,7 +70,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 
 ## ST-203 · Turn and landing
 
-**Status:** Proposed · **Epic slice:** S3 · **Depends on:** ST-202.
+**Status:** Done · **Backlog:** B-13 · **Epic slice:** S3 · **Depends on:** ST-202.
 
 **User story:** As the active player, I can see the accepted dice, follow my token, and understand the next landing decision.
 
@@ -157,3 +157,5 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | 2026-11-06 | ST-201 | In progress → Done | Owner selected Phaser plus native HTML; [ADR-007](../adr/ADR-007-renderer-proposal.md) accepted. Final artwork and B-09 reviews remain open. |
 | 2026-11-06 | ST-202 | Proposed → In progress | Owner requested ST-202; selected as B-12. Phaser board projection and setup presentation underway; no rule or profile change. |
 | 2026-11-06 | ST-202 | In progress → Done | Owner confirmed the app runs correctly in their environment and requested bypass of the automated browser handoff check. `bun run start` was reported working; `bun run build:web` succeeded. The browser runner still times out waiting for handoff controls after synthetic input; record that as a harness limitation, not a passing automated check. |
+| 2026-11-06 | ST-203 | Proposed → In progress | Owner requested ST-203; selected as B-13 after ST-202 completion. Presentation work will consume committed roll events; reducer rules remain unchanged. |
+| 2026-11-06 | ST-203 | In progress → Done | B-13 focused Chrome acceptance passes normal movement and Skip, crossing Start and awarding the correct amount, third-double forced jail, reduced-motion snap on the 360px touch context, refresh recovery without replay and 40-space accessibility. Live app checks confirmed mouse and keyboard handoff. Screenshots: `/tmp/family-monopoly-st203-desktop.png` and `/tmp/family-monopoly-st203-phone.png`. `bun run build:web`, 68 Bun tests and `git diff --check` pass. The broader AC-33–38 runner still has a synthetic post-refresh handoff limitation; this story's focused browser flow and live keyboard check pass. |

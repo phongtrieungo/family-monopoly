@@ -10,6 +10,7 @@ import { createRoomService } from '../src/rooms/service.js';
 import { createRequestHandler } from '../src/web/server.js';
 
 const directory = mkdtempSync(join(tmpdir(), 'family-monopoly-acceptance-'));
+const st203Only = process.argv.includes('--st-203');
 const dice = [[6, 6], [5, 5], [4, 4], [3, 3], [1, 2], [2, 3], [1, 2], [6, 6], [5, 5], [4, 4], [3, 3], [1, 2]];
 const store = createRoomFileStore(join(directory, 'rooms.json'));
 const rooms = createRoomService({ board, rules, startingCash: 100, store });
@@ -36,13 +37,13 @@ function send(method, params = {}, sessionId) {
     socket.send(JSON.stringify({ id, method, params, sessionId }));
   });
 }
-async function tab(width, mobile) {
+async function tab(width, mobile, reducedMotion = true) {
   const { browserContextId } = await send('Target.createBrowserContext');
   const { targetId } = await send('Target.createTarget', { url: 'about:blank', browserContextId });
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   const call = (method, params) => send(method, params, sessionId);
   await call('Emulation.setDeviceMetricsOverride', { width, height: 800, deviceScaleFactor: 1, mobile });
-  await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  if (reducedMotion) await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   if (mobile) await call('Emulation.setTouchEmulationEnabled', { enabled: true });
   const run = async (expression) => {
     const result = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
@@ -118,6 +119,21 @@ async function snapshot(page) {
     if (!response.ok) throw Error('Sync failed'); return (await response.json()).snapshot;
   })()`);
 }
+async function assertCommittedRoll(page) {
+  const expected = await page.run(`(() => {
+    const game = JSON.parse(sessionStorage.getItem('local-game'));
+    const rolled = [...game.history].reverse().flatMap(({ events }) => [...events].reverse()).find(({ type }) => type === 'Rolled');
+    const seat = game.snapshot.turn.seats.find(({ id }) => id === rolled.seatId);
+    const board = game.board;
+    return { dice: rolled.dice.join(' + '), position: seat.position, name: board.copy[board.spaces[seat.position].labelKey], forcedJail: game.history.at(-1).events.some(({ type, seatId }) => type === 'Jailed' && seatId === rolled.seatId) };
+  })()`);
+  const displayed = await page.run("document.querySelector('#local-roll-result').textContent");
+  const saved = await page.run("(() => { const game = JSON.parse(sessionStorage.getItem('local-game')); return JSON.stringify({ lastRoll: game.lastRoll, activeSeatId: game.snapshot.turn.activeSeatId, revision: game.snapshot.revision, text: document.querySelector('#local-roll-result').textContent }); })()");
+  assert.ok(displayed.includes(expected.dice), `displayed roll must match committed dice ${expected.dice}; saved=${saved}`);
+  assert.ok(displayed.includes(expected.forcedJail ? 'Nhà chờ' : expected.name), `displayed landing must match snapshot: ${displayed}`);
+  assert.equal(await page.run("Boolean(document.querySelector('#local-board').dataset.revision && document.querySelector('#local-match').dataset.revision && document.querySelector('#local-board').dataset.revision === document.querySelector('#local-match').dataset.revision)"), true);
+  if (await page.run("matchMedia('(prefers-reduced-motion: reduce)').matches")) assert.equal(await page.run("document.querySelector('#local-board').dataset.animating"), 'false');
+}
 async function handoff(page, touch = false) {
   await page.wait("document.querySelector('#confirm-handoff') && !document.querySelector('#confirm-handoff').disabled");
   if (await page.run("!document.querySelector('#local-handoff').hidden")) {
@@ -139,6 +155,7 @@ async function setup(page, url, touch = false) {
   await page.wait("!document.querySelector('#local-match').hidden && !document.querySelector('#confirm-handoff').disabled");
 }
 let desktop;
+let phone;
 let baseTurn;
 let roomId;
 async function seed(change) {
@@ -154,9 +171,23 @@ async function shot(page, name) {
 }
 try {
   server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createRequestHandler(rooms, { localRooms }) });
-  await startChrome(); desktop = await tab(1440, false);
+  await startChrome(); desktop = await tab(1440, false, !st203Only);
   await setup(desktop, new URL('/local', server.url).href);
+  const desktopDice = [...dice];
+  phone = await tab(360, true); await setup(phone, new URL('/local', server.url).href, true);
+  await phone.wait("Boolean(document.querySelector('#local-board').dataset.revision && document.querySelector('#local-match').dataset.revision && document.querySelector('#local-board').dataset.revision === document.querySelector('#local-match').dataset.revision)");
+  const phoneBoard = await phone.run(`(() => { const board = document.querySelector('#local-board'); const canvas = board.querySelector('canvas'); return { display: getComputedStyle(board).display, boardWidth: board.getBoundingClientRect().width, canvasWidth: canvas.getBoundingClientRect().width }; })()`);
+  assert.equal(phoneBoard.display, 'block'); assert.ok(phoneBoard.canvasWidth >= phoneBoard.boardWidth - 2, JSON.stringify(phoneBoard));
+  assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
+  dice.splice(0, dice.length, ...desktopDice);
+  if (st203Only) {
+    dice.unshift([1, 2]);
+    await handoff(phone, true); await phone.tap(control('Roll')); await phone.wait(enabled('Buy')); await assertCommittedRoll(phone);
+    dice.splice(0, dice.length, ...desktopDice);
+    dice.unshift([6, 5]);
+  }
   const started = await snapshot(desktop); roomId = started.roomId;
+  await desktop.wait("Boolean(document.querySelector('#local-board').dataset.revision && document.querySelector('#local-match').dataset.revision && document.querySelector('#local-board').dataset.revision === document.querySelector('#local-match').dataset.revision)");
   baseTurn = structuredClone(store.read().find((entry) => entry.id === roomId).turn);
   const ids = started.turn.seats.map(({ id }) => id);
   assert.equal(started.turn.seats.length, 4); assert.equal(started.profile.rules.id, 'vn-original-v1');
@@ -164,12 +195,53 @@ try {
   assert.equal(await desktop.run("document.querySelectorAll('#local-spaces li').length"), 40);
   assert.equal(await desktop.run("document.querySelector('[data-command=Roll]').disabled || document.querySelector('#local-controls').disabled"), true);
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
-  await desktop.wait(enabled('Roll')); await desktop.click(control('Roll')); await desktop.wait(enabled('Buy'));
-  assert.match(await desktop.run("document.querySelector('#local-spaces li:nth-child(4)').textContent"), /Ô 4 · Sân nhỏ Hà Nội.*Đang ở đây: An.*Vị trí của người đang đến lượt/);
+  await desktop.wait(enabled('Roll')); await desktop.click(control('Roll'));
+  if (st203Only) {
+    await desktop.wait("document.querySelector('#local-board').dataset.animating === 'true' && !document.querySelector('#skip-local-motion').hidden");
+    await desktop.click('#skip-local-motion');
+    await desktop.wait("document.querySelector('#local-board').dataset.animating === 'false' && document.querySelector('#skip-local-motion').hidden");
+  }
+  await desktop.wait(enabled('Buy')); await assertCommittedRoll(desktop);
   const purchase = await snapshot(desktop); assert.equal(purchase.turn.phase, 'AwaitPurchase');
+
+  // Third consecutive double must present the committed forced-jail outcome,
+  // even though the dice distance itself points somewhere else.
+  dice.unshift([1, 1]);
+  await seed((turn) => { turn.seats[0].position = 0; turn.seats[0].doubles = 2; });
+  await desktop.click(control('Roll')); await desktop.wait(enabled('EndTurn'));
+  await desktop.wait("document.querySelector('#local-roll-result').textContent.includes('máy chủ đưa người chơi đến Nhà chờ')");
+  const jailed = await snapshot(desktop);
+  assert.equal(jailed.turn.seats[0].position, 10); assert.equal(jailed.turn.seats[0].jailed, true);
+  await assertCommittedRoll(desktop);
+  if (st203Only) {
+    await desktop.wait("document.querySelector('#local-board').dataset.animating === 'true' && !document.querySelector('#skip-local-motion').hidden");
+    await desktop.click('#skip-local-motion');
+    await desktop.wait("document.querySelector('#local-board').dataset.animating === 'false' && document.querySelector('#skip-local-motion').hidden");
+  }
+  const initialTurn = structuredClone(baseTurn);
+  baseTurn = initialTurn;
+  await seed((turn) => { turn.seats[0].position = 38; turn.seats[0].cash = 1040; turn.seats[0].doubles = 0; });
+  dice.unshift([2, 3]);
+  await desktop.click(control('Roll')); await desktop.wait(enabled('Buy'));
+  await desktop.wait("document.querySelector('#local-roll-result').textContent.includes('qua quảng trường')");
+  const wrapped = await snapshot(desktop);
+  assert.equal(wrapped.turn.seats[0].position, 3); assert.equal(wrapped.turn.seats[0].cash, 1200);
+  await assertCommittedRoll(desktop);
+  const wrappedTurn = structuredClone(store.read().find((entry) => entry.id === roomId).turn);
+  baseTurn = wrappedTurn; await seed(() => {}); await desktop.wait(enabled('Buy'));
+
   const origin = await desktop.run('performance.timeOrigin'); await desktop.call('Page.reload');
   await desktop.wait(`performance.timeOrigin !== ${origin}`); await desktop.wait("!document.querySelector('#local-handoff').hidden && !document.querySelector('#confirm-handoff').disabled");
-  assert.equal((await snapshot(desktop)).roomId, roomId); await handoff(desktop);
+  await desktop.wait("Boolean(document.querySelector('#local-board').dataset.revision && document.querySelector('#local-match').dataset.revision && document.querySelector('#local-board').dataset.revision === document.querySelector('#local-match').dataset.revision)");
+  assert.equal((await snapshot(desktop)).roomId, roomId);
+  if (st203Only) {
+    assert.equal(await desktop.run("!document.querySelector('#local-handoff').hidden && document.querySelector('#local-controls').disabled"), true);
+    await assertCommittedRoll(desktop);
+    assert.equal(await desktop.run("document.querySelector('#local-board').dataset.animating === 'false'"), true);
+    await shot(desktop, 'family-monopoly-st203-desktop.png'); await shot(phone, 'family-monopoly-st203-phone.png');
+    console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-203 / B-13', browser: 'Chrome desktop and 360px touch, reduced motion', flows: ['committed movement and skip', 'crossing start and award', 'third-double forced jail and skip', 'reduced-motion snap', 'refresh recovery without animation', 'mobile board width and overflow', '40-space accessible list'], screenshots: ['/tmp/family-monopoly-st203-desktop.png', '/tmp/family-monopoly-st203-phone.png'] }, null, 2));
+  } else {
+  await handoff(desktop);
   await desktop.run(`(() => { const original = window.fetch; let lost = false; window.fetch = async (path, options) => {
     const response = await original(path, options);
     if (!lost && path === '/api/local/command' && JSON.parse(options.body).type === 'Buy') { lost = true; throw new TypeError('Injected lost response'); }
@@ -230,9 +302,8 @@ try {
   await desktop.wait(enabled('Bankrupt')); await desktop.click(control('Bankrupt')); await desktop.wait("!document.querySelector('#local-winner').hidden");
   assert.match(await desktop.run("document.querySelector('#local-winner').textContent"), /Bình thắng/);
 
-  const phone = await tab(360, true); await setup(phone, new URL('/local', server.url).href, true);
   assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
-  await handoff(phone, true); await phone.tap(control('Roll')); await phone.wait(enabled('Buy'));
+  await handoff(phone, true); await phone.tap(control('Roll')); await phone.wait(enabled('Buy')); await assertCommittedRoll(phone);
   await phone.tap('#local-space-details summary'); assert.equal(await phone.run("document.querySelectorAll('#local-spaces li').length"), 40);
   await phone.tap(control('Buy')); await phone.wait(enabled('EndTurn'));
   await phone.run("window.originalFetch = window.fetch; window.fetch = (path, options) => path.startsWith('/api/local/sync') ? Promise.reject(new TypeError('Injected disconnect')) : window.originalFetch(path, options)");
@@ -245,6 +316,7 @@ try {
   await shot(phone, 'family-monopoly-local-phone.png');
   assert.equal(dice.length, 0);
   console.log(JSON.stringify({ result: 'PASS', contracts: 'AC-33–38', peoplePerPage: 4, browser: 'Chrome 1440px keyboard and 360px touch, reduced motion', flows: ['setup', 'handoff', 'purchase refresh', 'lost-response retry', 'explicit auction actors', 'rent', 'jail fee and release card', 'debt liquidation and settlement', 'mortgage acquisition', 'trade confirmation', 'building and sale', 'building demand auction', 'hotel shortage liquidation', 'winner', 'offline recovery'], screenshots: ['/tmp/family-monopoly-local-desktop.png', '/tmp/family-monopoly-local-phone.png'] }, null, 2));
+  }
 } finally {
   clearTimeout(deadline); socket?.close(); server?.stop(true);
   if (chrome) { chrome.kill(); await chrome.exited; }

@@ -16,11 +16,12 @@ let online = false;
 let syncing;
 let errorCode;
 let boardView;
+let lastRoll = game?.lastRoll ?? null;
 const credential = (id) => game?.sessions.find((entry) => entry.seatId === id)?.session;
 const person = (id) => state?.seats.find((entry) => entry.id === id)?.name ?? 'Ngân hàng';
 const spaceName = (id) => board?.copy[board.spaces.find((space) => space.id === id)?.labelKey] ?? id ?? '';
 function save() {
-  if (game) sessionStorage.setItem('local-game', JSON.stringify({ ...game, board, snapshot: state, history }));
+  if (game) sessionStorage.setItem('local-game', JSON.stringify({ ...game, board, snapshot: state, history, lastRoll }));
   if (pending) sessionStorage.setItem('local-command', JSON.stringify(pending)); else sessionStorage.removeItem('local-command');
 }
 function error(code) { errorCode = code; $('local-error').hidden = !code; $('local-error').textContent = code ? errors[code] ?? errors.Unknown : ''; }
@@ -93,7 +94,14 @@ function describe(event) {
     default: return '';
   }
 }
-function render() {
+function rollText(roll) {
+  if (!roll) return '';
+  const name = person(roll.seatId);
+  if (roll.forcedJail) return `${name} gieo ${roll.dice.join(' + ')}; máy chủ đưa người chơi đến Nhà chờ.`;
+  const destination = board.spaces[roll.toPosition];
+  return `${name} gieo ${roll.dice.join(' + ')}; đến ô ${roll.toPosition + 1} · ${board.copy[destination.labelKey]}.${roll.startAward ? ` Nhận ${money(roll.startAward)} khi qua quảng trường.` : ''}`;
+}
+function render({ motion } = {}) {
   if (!state || !board) return;
   const oldActor = $('local-actor').value;
   const wasHandoff = !$('local-handoff').hidden;
@@ -108,11 +116,13 @@ function render() {
   $('local-turn-heading').textContent = phases[turn.phase] ?? 'Đang chờ quyết định';
   $('local-bank').textContent = `Ngân hàng còn ${turn.stock.houses} nhà và ${turn.stock.hotels} khách sạn.`;
   const active = turn.seats.find((seat) => seat.id === turn.activeSeatId);
+  if (lastRoll && lastRoll.seatId !== turn.activeSeatId) lastRoll = null;
   let context = `Lượt của ${person(turn.activeSeatId)} · ${spaceName(board.spaces[active.position].id)}.`;
   if (turn.pendingDebt) context = `${person(turn.pendingDebt.from)} cần trả ${money(turn.pendingDebt.amount)} cho ${person(turn.pendingDebt.to)}. ${cardCopy[turn.pendingDebt.sourceId] ?? (turn.pendingDebt.sourceId === 'jail' ? 'Phí ra nhà chờ' : spaceName(turn.pendingDebt.sourceId))}`;
   if (turn.phase === 'Auction') context = turn.auction.kind === 'building' ? 'Công trình cuối đang được giữ cho cuộc đấu giá. Chọn rõ người đặt giá.' : `Đấu giá ${spaceName(turn.auction.spaceId)}. Chọn rõ người đặt giá hoặc bỏ lượt.`;
   if (turn.phase === 'BuildingDemand') context = 'Công trình cuối được giữ lại. Mọi người được mời cần đăng ký ô hợp lệ hoặc từ chối.';
   $('local-context').textContent = context;
+  $('local-roll-result').textContent = rollText(lastRoll);
   const chooser = $('local-actor'); chooser.replaceChildren(...allowed.map((id) => { const option = node('option', person(id)); option.value = id; return option; })); chooser.value = actorId;
   $('local-actor-label').hidden = turn.phase === 'Finished';
   const gate = acknowledgedSeatId !== actorId && turn.phase !== 'Finished';
@@ -134,7 +144,8 @@ function render() {
     if (held) item.append(node('small', `Giấy ra: ${held}`)); return item;
   }));
   if (!boardView) boardView = createBoardView($('local-board'));
-  boardView.render({ board, state, activeSeatId: turn.activeSeatId, person });
+  boardView.render({ board, state, activeSeatId: turn.activeSeatId, person, roll: lastRoll, motion,
+    onMotionChange: (playing) => { $('skip-local-motion').hidden = !playing; } });
   $('local-spaces').replaceChildren(...board.spaces.map((space) => {
     const owner = turn.ownership[space.id]; const level = turn.buildings[space.id] ?? 0;
     const occupants = turn.seats.filter((seat) => !seat.eliminated && seat.position === space.position).map((seat) => person(seat.id));
@@ -152,17 +163,36 @@ function render() {
 }
 async function syncNow() {
   if (!game) return;
+  let resynced = false;
   try {
     board ??= await api('/api/local/board');
     const session = game.sessions[0].session;
     let result;
     try { result = await api(`/api/local/sync?since=${state?.revision ?? 0}`, undefined, session); }
-    catch (failure) { if (failure.message !== 'ResyncRequired') throw failure; result = await api('/api/local/sync?since=0', undefined, session); history = []; }
+    catch (failure) { if (failure.message !== 'ResyncRequired') throw failure; result = await api('/api/local/sync?since=0', undefined, session); history = []; resynced = true; }
     online = true;
     if (errorCode === 'Network' && !pending) error();
     if (!state || state.revision !== result.snapshot.revision || $('local-match').hidden) {
       const before = state; state = result.snapshot;
-      history = [...history, ...result.history].slice(-60); render();
+      history = [...history, ...result.history].slice(-60);
+      let motion;
+      if (!resynced && before && result.history.length === 1) {
+        const row = result.history[0]; const rolled = row.events.find((event) => event.type === 'Rolled');
+        if (rolled) {
+          const previous = before.turn.seats.find(({ id }) => id === rolled.seatId);
+          const current = state.turn.seats.find(({ id }) => id === rolled.seatId);
+          if (previous && current) {
+            const forcedJail = row.events.some((event) => event.type === 'Jailed' && event.seatId === rolled.seatId);
+            const expected = (previous.position + rolled.dice.reduce((sum, die) => sum + die, 0)) % board.spaces.length;
+            lastRoll = { seatId: rolled.seatId, dice: rolled.dice, fromPosition: previous.position,
+              toPosition: current.position, forcedJail,
+              startAward: row.events.find((event) => event.type === 'StartAwarded' && event.seatId === rolled.seatId)?.amount };
+            if (previous.position !== current.position && (forcedJail || expected === current.position) &&
+                !matchMedia('(prefers-reduced-motion: reduce)').matches) motion = lastRoll;
+          }
+        } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
+      } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
+      render({ motion });
       const announcement = result.history.flatMap(({ events }) => events.map(describe)).filter(Boolean).join(' ');
       $('local-announcement').textContent = announcement || (before?.turn.phase !== state.turn.phase ? `${phases[state.turn.phase]} · ${person(preferred())}` : '');
     }
@@ -192,6 +222,7 @@ async function submit(type, payload = {}) {
 }
 $('local-actor').addEventListener('change', (event) => selectActor(event.target.value));
 $('confirm-handoff').addEventListener('click', () => { if (!online || busy || pending) return; acknowledgedSeatId = actorId; render(); $('local-turn-heading').focus(); });
+$('skip-local-motion').addEventListener('click', () => boardView?.skipMotion());
 $('retry-command').addEventListener('click', sendPending);
 $('local-setup-form').addEventListener('submit', async (event) => {
   event.preventDefault(); if (busy) return; busy = true; locks(); error();
@@ -200,7 +231,7 @@ $('local-setup-form').addEventListener('submit', async (event) => {
   sessionStorage.setItem('local-creation', JSON.stringify(creation));
   try {
     const result = await api('/api/local/create', creation);
-    game = { sessions: result.sessions }; state = result.snapshot; history = []; pending = null; acknowledgedSeatId = undefined; requiredKey = undefined;
+    game = { sessions: result.sessions }; state = result.snapshot; history = []; lastRoll = null; pending = null; acknowledgedSeatId = undefined; requiredKey = undefined;
     save(); sessionStorage.removeItem('local-creation');
     board ??= await api('/api/local/board'); online = true; render(); await sync();
   } catch (failure) { error(failure.message); }
