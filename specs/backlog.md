@@ -14,6 +14,7 @@ The prototype path runs B-01 through B-06. The B-01 harness and fixtures are doc
 | B-08 | Full-match rule coverage | B-06, B-07 | Approved rules and Gherkin for jail, cards, trading, debt, bankruptcy and winner are implemented in the domain and room service. See [B-08 coverage and open client gates](full-match-implementation.md). |
 | B-09 | Wider playtest gate | B-08, B-10 | Review branding, localization, accessibility, retention and match-abandonment policy. See [B-09 findings and open gates](playtest-review.md). |
 | B-10 | Shared-browser local play | B-08 | AC-33–38 pass for 2–4 seats on one machine, authored full-match controls, handoff, refresh and command retry. See [local-play contract](local-play.md). |
+| B-11 | ST-201 visual direction and renderer spike | B-08, B-10 | Compare Phaser and React/SVG on the same server-accepted input, verify accessible and reduced-motion presentation, capture evidence and document the renderer decision. The owner selected Phaser plus native HTML; see [ADR-007](adr/ADR-007-renderer-proposal.md). See [ST-201](epics/EPIC-002-stories.md#st-201--visual-direction-and-renderer-spike). |
 
 The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs remain stable.
 
@@ -26,8 +27,8 @@ The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs re
 
 ## Proposed future epics
 
-These plans describe candidate work only; they do not authorize implementation or alter existing requirement IDs. Select and add one slice to this backlog before work begins.
+The owner selected ST-201 as B-11 on 2026-11-06. Other future slices remain proposed; select and add one slice to this backlog before work begins. Existing requirement IDs remain stable.
 
-- [EPIC-002: Local family game presentation](epics/EPIC-002.md) — highest priority.
+- [EPIC-002: Local family game presentation](epics/EPIC-002.md) — highest priority; see [detailed stories and status](epics/EPIC-002-stories.md).
 - [EPIC-003: Private full-match play across devices](epics/EPIC-003.md) — deferred until after the local experience.
 - [EPIC-004: Wider-playtest and hosting readiness](epics/EPIC-004.md) — deferred and subject to audience and deployment decisions.

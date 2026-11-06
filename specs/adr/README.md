@@ -1,6 +1,6 @@
 # Architecture decision records
 
-These records establish prototype boundaries. ADR-005 selects the domain harness stack. Hosting remains open.
+These records establish prototype boundaries. ADR-005 selects the domain harness stack. Hosting remains open. [ADR-007](ADR-007-renderer-proposal.md) records the accepted Phaser and native HTML renderer decision.
 
 ## ADR-001 · Deterministic domain engine
 

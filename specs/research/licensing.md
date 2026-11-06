@@ -22,3 +22,9 @@ Codex reviewed the tracked prototype files on 2026-11-06. The owner selected ori
 | Layout and styles | `src/web/style.css` | Authored for this project. Uses installed system fonts. No bundled third-party font, image or audio files. |
 | C1009 rulebook | External SRC-01 PDF linked in the edition review | Research evidence. No reproduction permission recorded. |
 | Full-match board, deed values and decks | `specs/research/content-profile.md`, `src/domain/vn-original-content.js` | Authored by Codex on 2026-11-06 after owner authorization for original economy and cards. Reviewed against the board counts and effect definitions for internal implementation. Balance, fluent-reader and distribution review remain open. |
+
+## ST-201 renderer spike provenance and review
+
+Codex inspected the installed package metadata and bundled MIT notices on 2026-11-06. The isolated spike uses Phaser 3.90.0 (Richard Davey / Phaser Studio Inc.), React 19.2.0 and React DOM 19.2.0 (Meta Platforms, Inc. and affiliates), with eventemitter3 5.0.4 (Arnout Kazemier) and scheduler 0.27.0 (Meta Platforms, Inc. and affiliates). All five installed package manifests declare MIT; their notices are retained in `spikes/st-201/licenses/`, and `bun.lock` pins the exact resolved packages. Phaser's optional third-party plugins are not imported by the spike. Review the final bundled material, notices and intended distribution scope before shipping; internal evaluation is not public distribution approval.
+
+The spike's geometric board, tokens, page layout, card treatment, copy, screenshots and movement recording were authored for this project in B-11. System fonts are used; no imported font, image or audio asset is included. They are internal visual drafts; fluent-reader, branding, family and public distribution reviews remain open.
