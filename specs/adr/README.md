@@ -43,3 +43,11 @@ These records establish prototype boundaries. ADR-005 selects the domain harness
 **Decision.** Use Bun 1.4.4 and native JavaScript ES modules. Use the built-in `bun:test` runner and assertions. Keep domain modules independent of runtime-specific APIs so they can be exercised without a room server and shared with browser tooling where useful. Start with fresh synthetic fixture state and scripted dice pairs. The authoritative server will supply live randomness when the reducer is integrated.
 
 **Consequences.** The harness requires Bun, with zero package dependencies and no build step. Use explicit validation for inputs at domain boundaries. A compile-time type system was considered and deferred for this slice. Select the web framework, persistence, transport implementation and hosting when the corresponding backlog items need them.
+
+## ADR-006 · Shared browser, separate seat sessions
+
+**Context.** Local play requires several people to share one browser while retaining the authoritative room and rules engine.
+
+**Decision.** Atomically create a local original-profile match and return a bundle of separate seat sessions to that browser. Store the bundle in session storage. Authenticate commands using the selected seat session and the existing revision/receipt boundary. Treat the shared device as one connection lease. Add a dedicated local page with handoffs and explicit auction actors.
+
+**Consequences.** People at the same device can control any local seat. This is a trusted shared-screen mode. Sessions and unrevealed deck order remain absent from public projections. Existing online admission and synthetic browser flows keep their current boundary. See the [local-play contract](../local-play.md).

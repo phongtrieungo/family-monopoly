@@ -6,7 +6,7 @@ Specification-first project for a private, Vietnam-themed family property-tradin
 - [Rules verification registry](specs/rules.md)
 - [Implementation backlog and test strategy](specs/backlog.md)
 
-This repository contains design documents, acceptance scenarios and a local Vietnamese-first browser prototype backed by the synthetic game engine. The official Vietnamese edition is unverified.
+This repository contains design documents, acceptance scenarios and Vietnamese-first browser clients for the authored local full match and the synthetic online prototype. The official Vietnamese edition is unverified.
 
 Run the prototype with Bun 1.4.4.
 
@@ -14,7 +14,9 @@ Run the prototype with Bun 1.4.4.
 bun src/web/server.js
 ```
 
-Open `http://127.0.0.1:3000`. Create a room, then open its invite link in a separate browser profile or private window. The local server uses a temporary room store by default. Set `ROOM_STORE` to a file in a private directory to reuse that store after a restart.
+For **2–4 people sharing one machine**, open [local play](http://127.0.0.1:3000/local), enter names and start the full authored game. Confirm the named player at each handoff; choose bidders explicitly in auctions. Reload the same tab to resume.
+
+For the original online synthetic prototype, open [private rooms](http://127.0.0.1:3000), create a room, then open its invite link in a separate browser profile or private window. The local server uses a temporary room store by default. Set `ROOM_STORE` to a file in a private directory to reuse that store after a restart.
 
 ## Development
 
@@ -24,4 +26,6 @@ With Bun 1.4.4, run the harness from the repository root.
 bun test
 ```
 
-The harness has zero package dependencies. It exercises AC-04 (purchase) and AC-06 (rent) through the reducer with scripted dice, and checks invalid boards and illegal transitions. The authored full-match domain and room service also cover AC-11–32. The browser adapter continues to use the synthetic profile. See the [B-08 command contract, traceability and open client gates](specs/full-match-implementation.md). The Gherkin files remain the acceptance contracts. See [ADR-005](specs/adr/README.md#adr-005--bun-domain-harness) for the stack decision.
+The harness has zero package dependencies. It exercises AC-04 (purchase) and AC-06 (rent) through the reducer with scripted dice, and checks invalid boards and illegal transitions. The authored full-match domain and room service also cover AC-11–32. The private-room adapter uses the synthetic profile; the local page uses the authored full profile. See the [B-08 command contract, traceability and open client gates](specs/full-match-implementation.md). The Gherkin files remain the acceptance contracts. See [ADR-005](specs/adr/README.md#adr-005--bun-domain-harness) for the stack decision.
+
+Local-play behavior and browser verification are recorded in the [B-10 contract](specs/local-play.md). The default temporary store lasts for the server process; use `ROOM_STORE` in a private directory to keep games across server restarts.

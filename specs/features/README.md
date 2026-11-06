@@ -7,5 +7,6 @@
 | F-03 Reconnect and authorization | Refresh preserves identity and prompts. Retries and unauthorized commands preserve consistent state. | US-05 · [recovery](recovery.feature) |
 | F-04 Accessible board | Keyboard and touch expose the same actions and equivalent board information. | US-06 · [interface](interface.feature) |
 | F-05 Full match | Add selected C1009 procedures and the authored profile's jail, deck effects, debt, development, trading, bankruptcy and victory behavior. | US-07 · R-05 to R-09 · [full-match contracts](full-match.feature) · [backlog](../backlog.md) |
+| F-06 Shared-browser local play | One device hosts 2–4 seats in the authored full match. | US-08 · [local play](local-play.feature) · AC-33–38 |
 
-AC-01–10 describe the synthetic prototype. AC-11 onward describe the internal vn-original-v1 profile. AC-11–32 have domain and room coverage recorded in the [B-08 traceability map](../full-match-implementation.md). Browser coverage for the full profile remains a separate client gate.
+AC-01–10 describe the synthetic prototype. AC-11 onward describe the internal vn-original-v1 profile. AC-11–32 have domain and room coverage recorded in the [B-08 traceability map](../full-match-implementation.md). Shared-browser full-profile coverage is recorded in [B-10 local play](../local-play.md); physical-device and wider playtest review remain open.

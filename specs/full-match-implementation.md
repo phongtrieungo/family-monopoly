@@ -4,7 +4,7 @@ The internal `vn-original-v1` engine implements the [authored content profile](r
 
 ## Selection and persistence
 
-Configure `createRoomService` with `vnNeighborhoodBoard`, `vnOriginalRules` and `startingCash: 1200` from `src/domain/vn-original-content.js` to select the original profile. This is an internal service configuration. The existing browser adapter and its controls continue to select the synthetic prototype; full-match browser controls and browser acceptance are an open client gate before wider playtesting.
+Configure `createRoomService` with `vnNeighborhoodBoard`, `vnOriginalRules` and `startingCash: 1200` from `src/domain/vn-original-content.js` to select the original profile. This is an internal service configuration. The private-room browser adapter continues to select the synthetic prototype. [B-10 local play](local-play.md) now exposes the authored full-match controls on one shared browser with separate acceptance evidence.
 
 Start records setup rolls (including tied-leader rerolls), private shuffled deck orders and a private content snapshot. A match keeps its pinned content rather than looking up a newer catalog on every command. `createVnOriginalMatch` plus the original setup rolls, deck permutations, accepted commands and recorded roll outcomes reconstruct the same domain state. Production randomness comes from the server; domain tests inject fixed outcomes.
 
@@ -42,7 +42,7 @@ The queue contains serializable payment, movement, card-return, acquisition and 
 | AC-28–32 | Domain jail attempts, ordinary doubles, confirmed trades, separate service roll and physical building conservation |
 | AC-01–10 | Existing synthetic domain/room tests and the separately recorded [B-06 browser evidence](prototype-acceptance.md) |
 
-Run `bun test` using the pinned Bun 1.4.4. The implementation does not promote reviewed or provisional rule claims to edition-verified status. Wider playtesting still requires the client, language and distribution gates above.
+Run `bun test` using the pinned Bun 1.4.4. The implementation does not promote reviewed or provisional rule claims to edition-verified status. Wider playtesting still requires the language, balance, physical-device and distribution gates above.
 
 ## Verification evidence
 

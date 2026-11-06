@@ -18,7 +18,7 @@ Codex reviewed the tracked prototype files on 2026-11-06. The owner selected ori
 | Material | Paths | Provenance and disposition |
 | --- | --- | --- |
 | Synthetic board and economy | `src/domain/synthetic-board.js`, `test/fixtures/property-turn.js` | Authored for this project. Values are synthetic and must remain labeled as such. |
-| Vietnamese labels and copy | `src/web/vi.js`, `src/web/index.html`, `src/web/app.js` | Authored for this project. Fluent-reader review and public name clearance remain open. |
+| Vietnamese labels and copy | `src/web/vi.js`, `src/web/index.html`, `src/web/app.js`, `src/web/local.html`, `src/web/local.js`, `src/web/local-controls.js`, `src/web/local-vi.js` | Authored for this project. Fluent-reader review and public name clearance remain open. |
 | Layout and styles | `src/web/style.css` | Authored for this project. Uses installed system fonts. No bundled third-party font, image or audio files. |
 | C1009 rulebook | External SRC-01 PDF linked in the edition review | Research evidence. No reproduction permission recorded. |
 | Full-match board, deed values and decks | `specs/research/content-profile.md`, `src/domain/vn-original-content.js` | Authored by Codex on 2026-11-06 after owner authorization for original economy and cards. Reviewed against the board counts and effect definitions for internal implementation. Balance, fluent-reader and distribution review remain open. |

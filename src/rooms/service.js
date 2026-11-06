@@ -40,6 +40,7 @@ function snapshot(room, seat) {
   };
   return structuredClone({
     roomId: room.id,
+    ...(room.mode === 'Local' ? { mode: 'Local' } : {}),
     selfSeatId: seat.id,
     hostSeatId: room.hostSeatId,
     status: room.status,
@@ -105,18 +106,64 @@ export function createRoomService({
   };
   if (!Number.isSafeInteger(startingCash) || startingCash < 0) throw new RoomError('InvalidStartingCash');
 
+  function initialTurn(seats, hostSeatId) {
+    if (fullMatch) {
+      let contenders = seats.map(({ id }) => id);
+      const setupRolls = [];
+      do {
+        const round = contenders.map((seatId) => ({ seatId, dice: rollDice() }));
+        if (round.some(({ dice }) => !Array.isArray(dice) || dice.length !== 2 || !dice.every((die) => Number.isInteger(die) && die >= 1 && die <= 6))) throw new RoomError('InvalidDice');
+        setupRolls.push(round);
+        const high = Math.max(...round.map(({ dice }) => dice[0] + dice[1]));
+        contenders = round.filter(({ dice }) => dice[0] + dice[1] === high).map(({ seatId }) => seatId);
+        if (setupRolls.length > 1000) throw new RoomError('SetupRollLimit');
+      } while (contenders.length > 1);
+      const deckOrders = Object.fromEntries(Object.entries(vnOriginalDecks).map(([id, cards]) => [id, shuffleDeck(cards.map((card) => card.id))]));
+      return createVnOriginalMatch(seats.map(({ id }) => id), { setupRolls, deckOrders });
+    }
+    return { phase: 'AwaitRoll', activeSeatId: hostSeatId, seats: seats.map(({ id }) => ({ id, position: 0, cash: startingCash })), ownership: {} };
+  }
+
   function setConnection(session, connected) {
     const rooms = store.read();
     const { room, seat } = authenticate(rooms, session);
-    if (seat.connected !== connected) {
-      seat.connected = connected;
-      record(room, [{ type: 'ConnectionChanged', seatId: seat.id, connected }]);
+    const changed = (room.mode === 'Local' ? room.seats : [seat]).filter((entry) => entry.connected !== connected);
+    if (changed.length) {
+      changed.forEach((entry) => { entry.connected = connected; });
+      record(room, changed.map((entry) => ({ type: 'ConnectionChanged', seatId: entry.id, connected })));
       store.write(rooms);
     }
     return snapshot(room, seat);
   }
 
   return {
+    assertLocal(session) {
+      if (authenticate(store.read(), session).room.mode !== 'Local') throw new RoomError('Unauthorized');
+    },
+
+    createLocal(names, requestId) {
+      if (!fullMatch) throw new RoomError('ProfileUnavailable');
+      if (!Array.isArray(names) || names.length < 2 || names.length > 4 ||
+          names.some((name) => typeof name !== 'string' || !name.trim() || name.trim().length > 32) ||
+          new Set(names.map((name) => name.trim().toLocaleLowerCase('vi'))).size !== names.length ||
+          typeof requestId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(requestId)) {
+        throw new RoomError('InvalidLocalSetup');
+      }
+      const normalized = names.map((name) => name.trim());
+      const records = store.read();
+      let room = records.find((entry) => entry.localCreationId === requestId);
+      if (room && JSON.stringify(room.seats.map(({ name }) => name)) !== JSON.stringify(normalized)) throw new RoomError('CommandIdConflict');
+      if (!room) {
+        const seats = normalized.map((name) => ({ ...createSeat(name), ready: true }));
+        room = { id: randomUUID(), mode: 'Local', localCreationId: requestId, invite: null,
+          hostSeatId: seats[0].id, status: 'InMatch', seats, revision: 0, receipts: [], history: [], profile,
+          turn: initialTurn(seats, seats[0].id) };
+        record(room, [{ type: 'MatchStarted', setupRolls: room.turn.setupRolls }]);
+        records.push(room); store.write(records);
+      }
+      return { sessions: room.seats.map(({ id, session }) => ({ seatId: id, session })), snapshot: snapshot(room, room.seats[0]) };
+    },
+
     create(name) {
       const rooms = store.read();
       const seat = createSeat(name);
@@ -130,6 +177,7 @@ export function createRoomService({
     },
 
     join(invite, name) {
+      if (typeof invite !== 'string' || !invite) throw new RoomError('InvalidInvite');
       const rooms = store.read();
       const room = rooms.find((room) => room.invite === invite);
       if (!room) throw new RoomError('InvalidInvite');
@@ -191,26 +239,7 @@ export function createRoomService({
             }
             room.status = 'InMatch';
             room.profile = profile;
-            room.turn = {
-              phase: 'AwaitRoll',
-              activeSeatId: room.hostSeatId,
-              seats: room.seats.map(({ id }) => ({ id, position: 0, cash: startingCash })),
-              ownership: {},
-            };
-            if (fullMatch) {
-              let contenders = room.seats.map(({ id }) => id);
-              const setupRolls = [];
-              do {
-                const round = contenders.map((seatId) => ({ seatId, dice: rollDice() }));
-                if (round.some(({ dice }) => !Array.isArray(dice) || dice.length !== 2 || !dice.every((die) => Number.isInteger(die) && die >= 1 && die <= 6))) throw new RoomError('InvalidDice');
-                setupRolls.push(round);
-                const high = Math.max(...round.map(({ dice }) => dice[0] + dice[1]));
-                contenders = round.filter(({ dice }) => dice[0] + dice[1] === high).map(({ seatId }) => seatId);
-                if (setupRolls.length > 1000) throw new RoomError('SetupRollLimit');
-              } while (contenders.length > 1);
-              const deckOrders = Object.fromEntries(Object.entries(vnOriginalDecks).map(([id, cards]) => [id, shuffleDeck(cards.map((card) => card.id))]));
-              room.turn = createVnOriginalMatch(room.seats.map(({ id }) => id), { setupRolls, deckOrders });
-            }
+            room.turn = initialTurn(room.seats, room.hostSeatId);
             events = [{ type: 'MatchStarted', ...(fullMatch ? { setupRolls: room.turn.setupRolls } : {}) }];
           }
         }

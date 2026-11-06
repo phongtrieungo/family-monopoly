@@ -8,6 +8,8 @@ Families use an invite to gather around a shared board from their own devices. A
 
 The first playable slice proves a two-device session from invite through purchase or auction, rent and the next turn, including refresh during a pending decision. Full-match completion is a later milestone. Prototype scope is 2–4 guests, one board, Vietnamese-first copy, browser-based mouse, keyboard and touch input, and a seeded synthetic fixture for internal testing. Exclude accounts, matchmaking, chat, bots, public listings, payments and alternate rule modes.
 
+The [B-10 local mode](local-play.md) lets 2–4 people share one browser and device with the authored full-match profile. It uses explicit player handoffs and the same authoritative room engine.
+
 ## User stories
 
 | ID | As a… I want… | Acceptance |
@@ -19,6 +21,7 @@ The first playable slice proves a two-device session from invite through purchas
 | US-05 | Returning player, I want to recover my seat after refresh | The original seat, pending decision and current revision reappear without duplicate actions. |
 | US-06 | Player using keyboard, touch or reduced motion, I want to follow the board | Each space has a readable equivalent in the space list and turn announcements work without animation. |
 | US-07 | Player in debt, I want to see what I owe and what I can do | Later full-match work covers lawful liquidation, settlement, bankruptcy and winner display. |
+| US-08 | Family sharing a machine, I want 2–4 people to play in one browser | Start with names, hand off the controls, select auction actors explicitly and resume the same full match after refresh. See [local play](local-play.md). |
 
 ## Prototype acceptance
 
@@ -31,6 +34,7 @@ Run host and guest in separate browser contexts at desktop and phone widths. Joi
 - [Turn state machine](turn-state.md)
 - [Private multiplayer rooms](rooms.md)
 - [UI and accessibility](ui-ux.md)
+- [Shared-browser local play](local-play.md)
 - [Feature requirements and Gherkin](features/README.md)
 - [Architecture decisions](adr/README.md)
 - [Implementation backlog and test strategy](backlog.md)

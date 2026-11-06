@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chơi chung một máy · Phố Nhà Mình</title>
+  <link rel="stylesheet" href="/style.css"><script type="module" src="/local.js"></script>
+</head>
+<body class="local-page">
+  <header class="masthead"><div><span class="eyebrow">CÙNG NHAU MỘT CHỖ</span><h1>Phố Nhà Mình</h1></div><span class="badge">Bản nội bộ · nội dung gốc đang thử nghiệm</span></header>
+  <main>
+    <nav class="local-nav"><a href="/">Phòng chơi trên nhiều máy</a><button id="new-local" class="secondary" hidden>Ván mới</button></nav>
+    <p id="local-error" role="alert" hidden></p><p id="local-connection" role="status" hidden>Mất kết nối. Đang thử đồng bộ lại…</p>
+    <section id="local-setup" class="panel entry">
+      <span class="eyebrow">2–4 NGƯỜI · 1 MÁY</span><h2>Một bàn chơi, cả nhà cùng vui</h2>
+      <p>Nhập tên rồi chuyền bàn phím hoặc chuột khi đến lượt. Không cần mã mời. Mỗi người bắt đầu với 1.200 xu.</p>
+      <form id="local-setup-form">
+        <label>Người chơi 1 <input name="player1" maxlength="32" required autocomplete="off"></label>
+        <label>Người chơi 2 <input name="player2" maxlength="32" required autocomplete="off"></label>
+        <label>Người chơi 3 · tùy chọn <input name="player3" maxlength="32" autocomplete="off"></label>
+        <label>Người chơi 4 · tùy chọn <input name="player4" maxlength="32" autocomplete="off"></label>
+        <button id="start-local">Bắt đầu chơi chung</button>
+      </form>
+      <p class="local-note">Mọi người dùng chung màn hình và có thể điều khiển các ghế của ván này. Tải lại trang để tiếp tục ván đang chơi.</p>
+    </section>
+    <section id="local-match" hidden>
+      <ul id="local-players" class="local-players" aria-label="Người chơi"></ul>
+      <div class="local-layout">
+        <section class="panel local-board-panel" aria-labelledby="local-board-heading">
+          <span class="eyebrow">MỘT VÒNG QUANH PHỐ</span><h2 id="local-board-heading">40 ô, nhiều câu chuyện</h2>
+          <p id="local-bank"></p><div id="local-board" class="local-board" aria-hidden="true"></div>
+          <details id="local-space-details"><summary>Danh sách ô và tài sản</summary><ol id="local-spaces"></ol></details>
+        </section>
+        <div class="match-side">
+          <section class="panel actions" aria-labelledby="local-turn-heading">
+            <span class="eyebrow">ĐANG CHỜ AI?</span><h2 id="local-turn-heading" tabindex="-1"></h2><p id="local-context"></p>
+            <label id="local-actor-label">Người đang cầm máy <select id="local-actor"></select></label>
+            <div id="local-handoff" class="handoff"><h3 id="handoff-heading" tabindex="-1"></h3><p>Chuyền máy cho người này trước khi tiếp tục.</p><button id="confirm-handoff"></button></div>
+            <div id="local-retry" class="handoff" hidden><p id="retry-context"></p><button id="retry-command">Gửi lại thao tác đã lưu</button></div>
+            <fieldset id="local-controls" class="local-controls" disabled><legend class="sr-only">Thao tác cho người đang cầm máy</legend><div id="local-actions"></div></fieldset>
+            <div id="local-winner" hidden></div>
+          </section>
+          <section class="panel"><h2>Diễn biến</h2><ol id="local-history"></ol></section>
+        </div>
+      </div>
+    </section>
+    <p id="local-announcement" class="sr-only" role="status"></p>
+  </main>
+</body>
+</html>
