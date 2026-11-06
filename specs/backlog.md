@@ -23,3 +23,11 @@ The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs re
 - Integration tests drive actual room commands against the intended persistence layer. Race join/start and competing bids. Inject lost responses and publish failures. Check that reconnect, dedupe and unauthorized projections preserve revision consistency and visibility.
 - Browser tests use independent contexts. Verify invitation, purchase, auction, rent, reconnect, keyboard and touch across desktop and mobile viewports. Manually review reduced motion, focus order, Vietnamese copy and announced state changes.
 - Specification checks validate local links, unique IDs, traceability and Gherkin syntax. Keep source evidence and licensing review separate from application test outcomes.
+
+## Proposed future epics
+
+These plans describe candidate work only; they do not authorize implementation or alter existing requirement IDs. Select and add one slice to this backlog before work begins.
+
+- [EPIC-002: Local family game presentation](epics/EPIC-002.md) — highest priority.
+- [EPIC-003: Private full-match play across devices](epics/EPIC-003.md) — deferred until after the local experience.
+- [EPIC-004: Wider-playtest and hosting readiness](epics/EPIC-004.md) — deferred and subject to audience and deployment decisions.
