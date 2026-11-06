@@ -1,5 +1,6 @@
 import { decisionControls, node } from './local-controls.js';
 import { money, cardCopy, phases, errors } from './local-vi.js';
+import { createBoardView } from './local-board.bundle.js';
 const $ = (id) => document.getElementById(id);
 const read = (key) => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
 let game = read('local-game');
@@ -14,6 +15,7 @@ let busy = false;
 let online = false;
 let syncing;
 let errorCode;
+let boardView;
 const credential = (id) => game?.sessions.find((entry) => entry.seatId === id)?.session;
 const person = (id) => state?.seats.find((entry) => entry.id === id)?.name ?? 'Ngân hàng';
 const spaceName = (id) => board?.copy[board.spaces.find((space) => space.id === id)?.labelKey] ?? id ?? '';
@@ -131,15 +133,8 @@ function render() {
     item.append(node('strong', `${index + 1}. ${person(seat.id)}${seat.id === turn.activeSeatId ? ' · đang đến lượt' : ''}`), node('span', money(seat.cash)), node('small', seat.eliminated ? 'Đã phá sản' : seat.jailed ? `Nhà chờ · ${seat.jailAttempts}/3 lần thử` : spaceName(board.spaces[seat.position].id)));
     if (held) item.append(node('small', `Giấy ra: ${held}`)); return item;
   }));
-  $('local-board').replaceChildren(...board.spaces.map((space, index) => {
-    const tile = node('div', '', `tile${space.position === active.position ? ' current' : ''}`);
-    tile.dataset.group = space.groupId ?? space.type;
-    const occupants = turn.seats.map((seat, i) => !seat.eliminated && seat.position === index ? `${i + 1}` : '').filter(Boolean).join(' · ');
-    tile.append(node('small', `${index + 1}${space.groupId ? ' · ' + space.groupId : ''}`), node('strong', board.copy[space.labelKey]), node('span', occupants ? `● ${occupants}` : turn.ownership[space.id] ? person(turn.ownership[space.id]) : ''));
-    const [row, col] = index <= 10 ? [11, 11 - index] : index <= 20 ? [21 - index, 1] : index <= 30 ? [1, index - 19] : [index - 29, 11];
-    tile.style.setProperty('--row', row); tile.style.setProperty('--col', col); return tile;
-  }));
-  $('local-board').append(node('div', 'Phố Nhà Mình\nChơi cùng nhau · 1 máy', 'local-board-center'));
+  if (!boardView) boardView = createBoardView($('local-board'));
+  boardView.render({ board, state, activeSeatId: turn.activeSeatId, person });
   $('local-spaces').replaceChildren(...board.spaces.map((space) => {
     const owner = turn.ownership[space.id]; const level = turn.buildings[space.id] ?? 0;
     const occupants = turn.seats.filter((seat) => !seat.eliminated && seat.position === space.position).map((seat) => person(seat.id));

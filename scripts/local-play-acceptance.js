@@ -121,7 +121,8 @@ async function snapshot(page) {
 async function handoff(page, touch = false) {
   await page.wait("document.querySelector('#confirm-handoff') && !document.querySelector('#confirm-handoff').disabled");
   if (await page.run("!document.querySelector('#local-handoff').hidden")) {
-    if (touch) await page.tap('#confirm-handoff'); else await page.click('#confirm-handoff');
+    if (touch) await page.tap('#confirm-handoff');
+    else { await page.run("document.querySelector('#confirm-handoff').focus()"); await page.key('Enter', 'Enter', 13); }
   }
   await page.wait("!document.querySelector('#local-controls').disabled");
 }
@@ -159,7 +160,8 @@ try {
   baseTurn = structuredClone(store.read().find((entry) => entry.id === roomId).turn);
   const ids = started.turn.seats.map(({ id }) => id);
   assert.equal(started.turn.seats.length, 4); assert.equal(started.profile.rules.id, 'vn-original-v1');
-  assert.equal(await desktop.run("document.querySelectorAll('#local-board .tile').length"), 40);
+  assert.equal(await desktop.run("document.querySelector('#local-board canvas') !== null"), true);
+  assert.equal(await desktop.run("document.querySelectorAll('#local-spaces li').length"), 40);
   assert.equal(await desktop.run("document.querySelector('[data-command=Roll]').disabled || document.querySelector('#local-controls').disabled"), true);
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
   await desktop.wait(enabled('Roll')); await desktop.click(control('Roll')); await desktop.wait(enabled('Buy'));

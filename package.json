@@ -4,7 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "build:web": "bun build ./src/web/local-board.js --outdir ./src/web/build --target browser --minify --define 'process.env.NODE_ENV=\"production\"'",
+    "start": "bun run build:web && bun src/web/server.js"
   },
-  "packageManager": "bun@1.4.4"
+  "packageManager": "bun@1.4.4",
+  "dependencies": {
+    "phaser": "3.90.0"
+  }
 }

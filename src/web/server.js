@@ -15,6 +15,7 @@ const assets = {
   '/local.js': new URL('local.js', import.meta.url),
   '/local-controls.js': new URL('local-controls.js', import.meta.url),
   '/local-vi.js': new URL('local-vi.js', import.meta.url),
+  '/local-board.bundle.js': new URL('build/local-board.js', import.meta.url),
   '/vi.js': new URL('vi.js', import.meta.url),
 };
 
@@ -22,7 +23,7 @@ const headers = {
   'Cache-Control': 'no-store',
   'Referrer-Policy': 'no-referrer',
   'X-Content-Type-Options': 'nosniff',
-  'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'; base-uri 'none'",
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'",
 };
 
 export function createRequestHandler(rooms, { localRooms } = {}) {
