@@ -14,3 +14,9 @@ Vietnamese-first copy uses localization keys and Unicode with diacritics. Review
 ## B-05 prototype
 
 The local browser client polls for an authorized snapshot and committed events by revision. It keeps the seat credential in session storage for refresh. A failed sync keeps the last board and action prompt visible while disabling submissions. Successful sync restores the controls. When an action disappears after a committed transition, focus moves to the turn heading. The activity list and live announcement describe accepted dice, purchases, rent, and auction outcomes in Vietnamese.
+
+## B-10 shared-browser local client
+
+The [local-play page](local-play.md) accepts 2–4 names, renders the authored board and offers full-match decisions. It names the person holding the device and requires an explicit handoff before their actions. Auctions and building demand expose a person selector. Debt and acquisition prompts identify the responsible seat. Property management and trade forms show amounts before submission. On narrow screens, action controls precede the board and detailed space list.
+
+Session storage holds the local seat bundle, latest public snapshot and any unresolved command. Reload restores the pending decision and requires handoff again. The retry control submits the original command and actor after a lost response. Unrevealed deck order is never stored in the client.

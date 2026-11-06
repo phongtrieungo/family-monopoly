@@ -25,3 +25,7 @@ The service accepts revisioned Ready, Start and Close commands in the lobby. In 
 ## B-08 original-profile service
 
 Explicit service configuration selects the versioned original profile. Start saves server setup rolls, shuffled deck permutations and a pinned content snapshot. Public snapshots expose pending debts, acquisition choices, building demand, retained release cards and the winner, while hiding deck order and queued automatic work. The same revisions, atomic receipts and reconnect boundary apply to all full-match commands. See the [command contract and coverage](full-match-implementation.md).
+
+## B-10 local admission and connection
+
+`createLocal` atomically starts an original-profile match with 2–4 seats, without a lobby or shareable invite. An opaque UUID creation ID makes identical setup retries recover the original bundle; changed names under that ID fail. Local HTTP sync and command routes require a local-mode session. Each command still authenticates exactly one seat. A shared-device lease updates all local seats' connection flags together. See [local play](local-play.md) and ADR-006.
