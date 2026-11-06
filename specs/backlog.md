@@ -17,6 +17,7 @@ The prototype path runs B-01 through B-06. The B-01 harness and fixtures are doc
 | B-11 | ST-201 visual direction and renderer spike | B-08, B-10 | Compare Phaser and React/SVG on the same server-accepted input, verify accessible and reduced-motion presentation, capture evidence and document the renderer decision. The owner selected Phaser plus native HTML; see [ADR-007](adr/ADR-007-renderer-proposal.md). See [ST-201](epics/EPIC-002-stories.md#st-201--visual-direction-and-renderer-spike). |
 | B-12 | ST-202 game table and setup | B-08, B-10, B-11 | Render the authoritative 40-space local match with Phaser and the equivalent HTML space list; retain setup, separate seat credentials, handoffs and saved-session recovery. Check 2–4 names, desktop/360px layout and keyboard/touch access. See [ST-202](epics/EPIC-002-stories.md#st-202--game-table-and-setup). |
 | B-13 | ST-203 turn and landing presentation | B-12 | Present accepted dice, server-derived movement, landing and contextual choices; refresh/skip/reduced motion reconcile to the same snapshot. Cover AC-04, AC-06, AC-17, AC-29, AC-33–34, AC-36 and AC-38 without changing reducer rules. See [ST-203](epics/EPIC-002-stories.md#st-203--turn-and-landing). |
+| B-14 | ST-204 cards, payments and auctions | B-13 | Present accepted card reveals and payment feedback, and explicit shared-device auction decisions. Preserve visibility, idempotency, recovery and server settlement; cover AC-12–15, AC-18, AC-22, AC-35–36 and AC-38. See [ST-204](epics/EPIC-002-stories.md#st-204--cards-payments-and-auctions) and the [implementation story](../_bmad-output/implementation-artifacts/2-204-cards-payments-and-auctions.md). |
 
 The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs remain stable.
 
@@ -29,7 +30,7 @@ The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs re
 
 ## Proposed future epics
 
-The owner selected ST-201 as B-11 and ST-202 as B-12 on 2026-11-06. ST-202 is complete following owner manual validation; its automated handoff runner remains a known harness limitation. The owner selected ST-203 as B-13 on 2026-11-06; focused desktop and 360px browser acceptance passed on 2026-11-06. Other future slices remain proposed; select and add one slice to this backlog before work begins. Existing requirement IDs remain stable.
+The owner selected ST-201 as B-11 and ST-202 as B-12 on 2026-11-06. ST-202 is complete following owner manual validation; its automated handoff runner remains a known harness limitation. The owner selected ST-203 as B-13 on 2026-11-06; focused desktop and 360px browser acceptance passed on 2026-11-06. ST-204 is selected as B-14 and complete; focused and full browser acceptance passed in its isolated worktree. ST-205 and ST-206 remain proposed. Existing requirement IDs remain stable.
 
 - [EPIC-002: Local family game presentation](epics/EPIC-002.md) — highest priority; see [detailed stories and status](epics/EPIC-002-stories.md).
 - [EPIC-003: Private full-match play across devices](epics/EPIC-003.md) — deferred until after the local experience.
