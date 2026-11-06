@@ -10,7 +10,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | --- | --- | --- | --- | --- |
 | [ST-201](#st-201--visual-direction-and-renderer-spike) | S1 · Visual direction and renderer spike | Done | B-08, B-10 | [Sample and comparison](ST-201-comparison.md); [ADR-007 accepted](../adr/ADR-007-renderer-proposal.md) |
 | [ST-202](#st-202--game-table-and-setup) | S2 · Game table and setup | Done | ST-201 decision | B-12 · implementation complete; owner manually validated the running game |
-| [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Done | ST-202 | B-13 · focused acceptance passed; PR pending |
+| [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Done | ST-202 | B-13 · focused acceptance passed; [PR #15](https://github.com/phongtrieungo/family-monopoly/pull/15) |
 | [ST-204](#st-204--cards-payments-and-auctions) | S4 · Cards, payments and auctions | Proposed | ST-203 | Not started |
 | [ST-205](#st-205--manage-trade-and-recover) | S5 · Manage, trade and recover | Proposed | ST-204 | Not started |
 | [ST-206](#st-206--finish-and-family-acceptance) | S6 · Finish and family acceptance | Proposed | ST-205 | Not started |
