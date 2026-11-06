@@ -48,4 +48,5 @@ Feature: Share one browser between local players
     Given the local page at desktop or 360 CSS pixels with reduced motion
     When players navigate with keyboard or touch
     Then setup, handoff, decisions and the space list remain operable and readable
+    And the space list identifies each occupied space and the active player's location
     And losing sync preserves the last view and disables submissions until recovery
