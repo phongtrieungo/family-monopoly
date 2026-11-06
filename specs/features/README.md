@@ -8,4 +8,4 @@
 | F-04 Accessible board | Keyboard and touch expose the same actions and equivalent board information. | US-06 · [interface](interface.feature) |
 | F-05 Full match | Add selected C1009 procedures and the authored profile's jail, deck effects, debt, development, trading, bankruptcy and victory behavior. | US-07 · R-05 to R-09 · [full-match contracts](full-match.feature) · [backlog](../backlog.md) |
 
-AC-01–10 describe the synthetic prototype. AC-11 onward describe the future vn-original-v1 profile. They are acceptance contracts for future automation.
+AC-01–10 describe the synthetic prototype. AC-11 onward describe the internal vn-original-v1 profile. AC-11–32 have domain and room coverage recorded in the [B-08 traceability map](../full-match-implementation.md). Browser coverage for the full profile remains a separate client gate.

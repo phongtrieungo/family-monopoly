@@ -1,6 +1,8 @@
 import { randomInt, randomUUID } from 'node:crypto';
 
 import { createPropertyTurnReducer } from '../domain/property-turn.js';
+import { createVnOriginalMatch, reduceVnOriginalTurn } from '../domain/vn-original-turn.js';
+import { vnOriginalDecks } from '../domain/vn-original-content.js';
 
 export class RoomError extends Error {
   constructor(code) {
@@ -26,9 +28,15 @@ function snapshot(room, seat) {
   const turn = room.turn && {
     phase: room.turn.phase,
     activeSeatId: room.turn.activeSeatId,
-    seats: room.turn.seats.map(({ id, position, cash }) => ({ id, position, cash })),
+    seats: room.turn.seats.map(({ id, position, cash, jailed, jailAttempts, eliminated }) => ({ id, position, cash, ...(jailed !== undefined ? { jailed, jailAttempts, eliminated: !!eliminated } : {}) })),
     ownership: room.turn.ownership,
     auction: room.turn.auction,
+    ...(room.turn.content ? {
+      mortgages: room.turn.mortgages, buildings: room.turn.buildings, stock: room.turn.stock,
+      retainedCards: room.turn.retainedCards, pendingDebt: room.turn.pendingDebt,
+      acquisition: room.turn.acquisition, buildingDemand: room.turn.buildingDemand,
+      trade: room.turn.trade, winnerSeatId: room.turn.winnerSeatId,
+    } : {}),
   };
   return structuredClone({
     roomId: room.id,
@@ -49,6 +57,12 @@ function record(room, events) {
   return entry;
 }
 
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+  return value;
+}
+
 function commandPayload(type, payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw new RoomError('InvalidCommand');
@@ -59,14 +73,32 @@ function commandPayload(type, payload) {
   if (['Start', 'Close', 'Roll', 'Buy', 'Decline', 'Pass', 'EndTurn'].includes(type) && keys.length === 0) {
     return null;
   }
+  const schemas = {
+    SettleDebt: [], Bankrupt: [], PayJail: [], AcceptTrade: [], CancelTrade: [],
+    UseReleaseCard: ['cardId'], Mortgage: ['spaceId'], ReleaseMortgage: ['spaceId'],
+    SellBuilding: ['spaceId'], Build: ['spaceId'], ChooseMortgage: ['choice'],
+    LiquidateHotels: ['groupId', 'finalCounts'], BuildingDemand: ['spaceId'], BuildingOffer: ['accept'],
+    OfferTrade: ['targetSeatId', 'give', 'receive'],
+  };
+  const schema = Object.hasOwn(schemas, type) ? schemas[type] : null;
+  if (schema && keys.length === schema.length && schema.every((key) => Object.hasOwn(payload, key))) {
+    return JSON.stringify(canonical(payload));
+  }
   throw new RoomError('InvalidCommand');
 }
 
 export function createRoomService({
   store, board, rules, startingCash,
   rollDice = () => [randomInt(1, 7), randomInt(1, 7)],
+  shuffleDeck = (ids) => {
+    const result = [...ids];
+    for (let i = result.length - 1; i > 0; i -= 1) { const j = randomInt(0, i + 1); [result[i], result[j]] = [result[j], result[i]]; }
+    return result;
+  },
 }) {
-  const reduce = createPropertyTurnReducer(board, rules);
+  const fullMatch = rules.id === 'vn-original-v1';
+  if (fullMatch && (rules.version !== 1 || board.id !== 'vn-neighborhood-v1' || board.version !== 1)) throw new RoomError('ProfileUnavailable');
+  const reduce = fullMatch ? reduceVnOriginalTurn : createPropertyTurnReducer(board, rules);
   const profile = {
     board: { id: board.id, version: board.version },
     rules: { id: rules.id, version: rules.version },
@@ -165,17 +197,33 @@ export function createRoomService({
               seats: room.seats.map(({ id }) => ({ id, position: 0, cash: startingCash })),
               ownership: {},
             };
-            events = [{ type: 'MatchStarted' }];
+            if (fullMatch) {
+              let contenders = room.seats.map(({ id }) => id);
+              const setupRolls = [];
+              do {
+                const round = contenders.map((seatId) => ({ seatId, dice: rollDice() }));
+                if (round.some(({ dice }) => !Array.isArray(dice) || dice.length !== 2 || !dice.every((die) => Number.isInteger(die) && die >= 1 && die <= 6))) throw new RoomError('InvalidDice');
+                setupRolls.push(round);
+                const high = Math.max(...round.map(({ dice }) => dice[0] + dice[1]));
+                contenders = round.filter(({ dice }) => dice[0] + dice[1] === high).map(({ seatId }) => seatId);
+                if (setupRolls.length > 1000) throw new RoomError('SetupRollLimit');
+              } while (contenders.length > 1);
+              const deckOrders = Object.fromEntries(Object.entries(vnOriginalDecks).map(([id, cards]) => [id, shuffleDeck(cards.map((card) => card.id))]));
+              room.turn = createVnOriginalMatch(room.seats.map(({ id }) => id), { setupRolls, deckOrders });
+            }
+            events = [{ type: 'MatchStarted', ...(fullMatch ? { setupRolls: room.turn.setupRolls } : {}) }];
           }
         }
       } else {
         if (room.status !== 'InMatch') throw new RoomError('MatchRequired');
         if (JSON.stringify(room.profile) !== JSON.stringify(profile)) throw new RoomError('ProfileUnavailable');
         const shouldRoll = type === 'Roll' && room.turn.activeSeatId === seat.id && room.turn.phase === 'AwaitRoll';
-        const result = reduce(room.turn, { type, actorId: seat.id, amount: value },
-          shouldRoll ? { dice: rollDice() } : undefined);
+        const fields = typeof value === 'string' ? JSON.parse(value) : {};
+        const result = reduce(room.turn, { ...fields, type, actorId: seat.id, amount: value },
+          fullMatch ? { ...(shouldRoll ? { dice: rollDice() } : {}), rollDice } : shouldRoll ? { dice: rollDice() } : undefined);
         room.turn = result.state;
         events = result.events;
+        if (room.turn.phase === 'Finished') room.status = 'Finished';
       }
       const result = record(room, events);
       room.receipts.push({ seatId: seat.id, id, type, value, result });
