@@ -38,5 +38,6 @@ Run host and guest in separate browser contexts at desktop and phone widths. Joi
 - [Feature requirements and Gherkin](features/README.md)
 - [Architecture decisions](adr/README.md)
 - [Implementation backlog and test strategy](backlog.md)
+- [Wider-playtest review](playtest-review.md)
 - [Research and source manifest](research/sources.md)
 - [Licensing and asset manifest](research/licensing.md)

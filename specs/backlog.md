@@ -12,7 +12,7 @@ The prototype path runs B-01 through B-06. The B-01 harness and fixtures are doc
 | B-06 | Two-device internal prototype | B-05 | Complete GAME-SPEC-001 prototype acceptance with [reproducible fixtures and evidence](prototype-acceptance.md). |
 | B-07 | Edition research and content review | — | Pin edition and evidence for R-01–09, resolve discrepancies, and record asset decisions. Content baseline and shortage procedures recorded in the [B-07 review](research/edition-review.md) and [original content profile](research/content-profile.md). Wider-review gates remain open. |
 | B-08 | Full-match rule coverage | B-06, B-07 | Approved rules and Gherkin for jail, cards, trading, debt, bankruptcy and winner are implemented in the domain and room service. See [B-08 coverage and open client gates](full-match-implementation.md). |
-| B-09 | Wider playtest gate | B-08, B-10 | Review branding, localization, accessibility, retention and match-abandonment policy. |
+| B-09 | Wider playtest gate | B-08, B-10 | Review branding, localization, accessibility, retention and match-abandonment policy. See [B-09 findings and open gates](playtest-review.md). |
 | B-10 | Shared-browser local play | B-08 | AC-33–38 pass for 2–4 seats on one machine, authored full-match controls, handoff, refresh and command retry. See [local-play contract](local-play.md). |
 
 The owner prioritized B-10 after B-08 and before the B-09 review. Backlog IDs remain stable.

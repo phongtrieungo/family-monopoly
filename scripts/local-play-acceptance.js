@@ -163,6 +163,7 @@ try {
   assert.equal(await desktop.run("document.querySelector('[data-command=Roll]').disabled || document.querySelector('#local-controls').disabled"), true);
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
   await desktop.wait(enabled('Roll')); await desktop.click(control('Roll')); await desktop.wait(enabled('Buy'));
+  assert.match(await desktop.run("document.querySelector('#local-spaces li:nth-child(4)').textContent"), /Ô 4 · Sân nhỏ Hà Nội.*Đang ở đây: An.*Vị trí của người đang đến lượt/);
   const purchase = await snapshot(desktop); assert.equal(purchase.turn.phase, 'AwaitPurchase');
   const origin = await desktop.run('performance.timeOrigin'); await desktop.call('Page.reload');
   await desktop.wait(`performance.timeOrigin !== ${origin}`); await desktop.wait("!document.querySelector('#local-handoff').hidden && !document.querySelector('#confirm-handoff').disabled");

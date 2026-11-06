@@ -142,12 +142,13 @@ function render() {
   $('local-board').append(node('div', 'Phố Nhà Mình\nChơi cùng nhau · 1 máy', 'local-board-center'));
   $('local-spaces').replaceChildren(...board.spaces.map((space) => {
     const owner = turn.ownership[space.id]; const level = turn.buildings[space.id] ?? 0;
+    const occupants = turn.seats.filter((seat) => !seat.eliminated && seat.position === space.position).map((seat) => person(seat.id));
     let detail = '';
     if (space.economy) detail = ` Giá ${money(space.economy.price)}; thuê cơ bản ${money(space.economy.rents[0])}, đủ nhóm ${money(space.economy.rents[1])}; thuê với 1–4 nhà và khách sạn: ${space.economy.rents.slice(2).map(money).join(', ')}. Xây mỗi công trình ${money(space.economy.buildingCost)}.`;
     if (space.type === 'transit') detail = ` Giá ${money(space.price)}; thuê theo 1–4 bến: ${board.transit.rents.map(money).join(', ')}.`;
     if (space.type === 'service') detail = ` Giá ${money(space.price)}; thuê bằng 4 hoặc 10 lần tổng một lần gieo riêng.`;
     if (space.type === 'tax') detail = ` Nộp ${money(space.amount)}.`;
-    const item = node('li', `${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
+    const item = node('li', `Ô ${space.position + 1} · ${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${occupants.length ? ` Đang ở đây: ${occupants.join(', ')}.` : ''}${space.position === active.position ? ' Vị trí của người đang đến lượt.' : ''}${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
   }));
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
   locks();
