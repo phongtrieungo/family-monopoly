@@ -62,6 +62,53 @@ function locks() {
   $('new-local').disabled = busy;
   $('start-local').disabled = busy;
 }
+function cause(sourceId) {
+  if (cardCopy[sourceId]) return cardCopy[sourceId].replace(/\.$/, '');
+  if (sourceId === 'jail') return 'Phí ra nhà chờ';
+  if (board?.spaces.some(({ id }) => id === sourceId)) return spaceName(sourceId);
+  return 'Khoản thanh toán đã xác nhận';
+}
+function balances(ids) {
+  return [...new Set(ids)].flatMap((id) => {
+    const seat = state.turn.seats.find((entry) => entry.id === id);
+    return seat ? [`${person(id)}: ${money(seat.cash)}`] : [];
+  }).join(' · ');
+}
+function auctionSubject(event) {
+  if (event.spaceId) return spaceName(event.spaceId);
+  // Building auctions do not carry a property ID in their settlement event.
+  return 'công trình cuối';
+}
+const outcomeTypes = new Set(['StartAwarded', 'CardDrawn', 'RentPaid', 'PaymentSettled', 'BankPaid', 'AuctionStarted', 'AuctionBidAccepted', 'AuctionPassed', 'AuctionSettled', 'AuctionEndedWithoutBid']);
+function renderOutcome() {
+  const row = [...history].reverse().find(({ events }) => events.some(({ type }) => outcomeTypes.has(type)));
+  const events = row?.events.filter(({ type }) => outcomeTypes.has(type)) ?? [];
+  const lastCard = events.findLast(({ type }) => type === 'CardDrawn');
+  const lines = events.map((event) => {
+    const building = event.type === 'AuctionSettled' && row.events.find((entry) => entry.type === 'BuildingBought' && (entry.seatId ?? entry.from) === event.from);
+    let text = describe(building ? { ...event, spaceId: building.spaceId } : event);
+    if (event.type === 'CardDrawn') {
+      const seat = state.turn.seats.find(({ id }) => id === event.seatId);
+      if (seat && event === lastCard) text += ` Hiện tại: ${spaceName(board.spaces[seat.position]?.id)}.`;
+      if (state.turn.retainedCards[event.seatId]?.includes(event.cardId)) text += ' Đang giữ giấy ra nhà chờ.';
+      const debt = state.turn.pendingDebt;
+      if (debt?.sourceId === event.cardId) text += ` Đang chờ ${person(debt.from)} trả ${money(debt.amount)} cho ${person(debt.to)}.`;
+    }
+
+    if (['RentPaid', 'PaymentSettled'].includes(event.type)) text += ` Số dư hiện tại · ${balances([event.from, event.to])}.`;
+    if (event.type === 'BankPaid') text += ` Số dư hiện tại · ${balances([event.seatId])}.`;
+    if (event.type === 'AuctionSettled') text += ` Số dư hiện tại · ${balances([event.from])}.`;
+    return node('li', text);
+  });
+  const auction = state.turn.auction;
+  if (state.turn.phase === 'Auction' && auction) {
+    const subject = auction.kind === 'building' ? 'công trình cuối' : spaceName(auction.spaceId);
+    const leader = auction.highBid ? `${person(auction.highBid.seatId)} dẫn đầu với ${money(auction.highBid.amount)}.` : 'Chưa có người đặt giá.';
+    lines.push(node('li', `Đấu giá ${subject}. ${leader} Giá đặt tối thiểu ${money((auction.highBid?.amount ?? 9) + 1)}. Chọn người đủ điều kiện và xác nhận chuyền máy. Bỏ lượt là quyết định cuối trong cuộc đấu giá này.`));
+  }
+  $('local-outcome').hidden = !lines.length;
+  $('local-outcome-items').replaceChildren(...lines);
+}
 function describe(event) {
   const name = person(event.seatId ?? event.from);
   switch (event.type) {
@@ -69,18 +116,18 @@ function describe(event) {
     case 'Rolled': return `${name} gieo ${event.dice.join(' + ')}.`;
     case 'StartAwarded': return `${name} nhận ${money(event.amount)} khi qua quảng trường.`;
     case 'PropertyBought': return `${name} mua ${spaceName(event.spaceId)} với ${money(event.amount)}.`;
-    case 'RentPaid': return `${name} trả ${money(event.amount)} tiền thuê cho ${person(event.to)}.`;
-    case 'PaymentSettled': return `${name} trả ${money(event.amount)} cho ${person(event.to)}.`;
+    case 'RentPaid': return `${name} trả ${money(event.amount)} tiền thuê cho ${person(event.to)}. ${cause(event.sourceId)}.`;
+    case 'PaymentSettled': return `${name} trả ${money(event.amount)} cho ${person(event.to)}. ${cause(event.sourceId)}.`;
     case 'CardDrawn': return `${name}: ${cardCopy[event.cardId] ?? 'Rút một thẻ.'}`;
-    case 'BankPaid': return `${name} nhận ${money(event.amount)} từ ngân hàng.`;
+    case 'BankPaid': return `${name} nhận ${money(event.amount)} từ Ngân hàng. ${cause(event.cardId)}.`;
     case 'Jailed': return `${name} đến nhà chờ và kết thúc lượt.`;
     case 'JailFeePaid': return `${name} trả phí ra nhà chờ ${money(event.amount)}.`;
     case 'ServiceRolled': return `Xúc xắc tính tiền dịch vụ: ${event.dice.join(' + ')}.`;
     case 'AuctionStarted': return event.kind === 'building' ? 'Mở đấu giá công trình cuối.' : `Mở đấu giá ${spaceName(event.spaceId)}.`;
     case 'AuctionBidAccepted': return `${name} đặt giá ${money(event.amount)}.`;
     case 'AuctionPassed': return `${name} bỏ lượt đấu giá.`;
-    case 'AuctionSettled': return `${name} thắng đấu giá với ${money(event.amount)}.`;
-    case 'AuctionEndedWithoutBid': return 'Không có giá đặt; tài sản vẫn ở ngân hàng.';
+    case 'AuctionSettled': return `${name} thắng đấu giá ${auctionSubject(event)} với ${money(event.amount)}.`;
+    case 'AuctionEndedWithoutBid': return `Không có giá đặt; ${auctionSubject(event)} vẫn ở ngân hàng.`;
     case 'PropertyMortgaged': return `${name} thế chấp ${spaceName(event.spaceId)}, nhận ${money(event.amount)}.`;
     case 'MortgageReleased': return `${name} giải chấp ${spaceName(event.spaceId)}, trả ${money(event.amount)}.`;
     case 'BuildingBought': return `${name} xây tại ${spaceName(event.spaceId)}, trả ${money(event.amount)}.`;
@@ -157,6 +204,7 @@ function render({ motion } = {}) {
     const item = node('li', `Ô ${space.position + 1} · ${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${occupants.length ? ` Đang ở đây: ${occupants.join(', ')}.` : ''}${space.position === active.position ? ' Vị trí của người đang đến lượt.' : ''}${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
   }));
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
+  renderOutcome();
   locks();
   if (gate && (!wasHandoff || oldActor !== actorId)) $('handoff-heading').focus();
   save();
@@ -172,9 +220,14 @@ async function syncNow() {
     catch (failure) { if (failure.message !== 'ResyncRequired') throw failure; result = await api('/api/local/sync?since=0', undefined, session); history = []; resynced = true; }
     online = true;
     if (errorCode === 'Network' && !pending) error();
-    if (!state || state.revision !== result.snapshot.revision || $('local-match').hidden) {
+    if (resynced || !state || state.revision !== result.snapshot.revision || $('local-match').hidden) {
       const before = state; state = result.snapshot;
-      history = [...history, ...result.history].slice(-60);
+      const knownRevisions = new Set(history.map(({ revision }) => revision));
+      const accepted = result.history.filter(({ revision }) => {
+        if (knownRevisions.has(revision)) return false;
+        knownRevisions.add(revision); return true;
+      });
+      history = [...history, ...accepted].slice(-60);
       let motion;
       if (!resynced && before && result.history.length === 1) {
         const row = result.history[0]; const rolled = row.events.find((event) => event.type === 'Rolled');
@@ -193,7 +246,7 @@ async function syncNow() {
         } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
       } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
       render({ motion });
-      const announcement = result.history.flatMap(({ events }) => events.map(describe)).filter(Boolean).join(' ');
+      const announcement = (resynced || !before ? [] : accepted).flatMap(({ events }) => events.map(describe)).filter(Boolean).join(' ');
       $('local-announcement').textContent = announcement || (before?.turn.phase !== state.turn.phase ? `${phases[state.turn.phase]} · ${person(preferred())}` : '');
     }
     locks();

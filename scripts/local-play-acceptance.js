@@ -11,7 +11,8 @@ import { createRequestHandler } from '../src/web/server.js';
 
 const directory = mkdtempSync(join(tmpdir(), 'family-monopoly-acceptance-'));
 const st203Only = process.argv.includes('--st-203');
-const dice = [[6, 6], [5, 5], [4, 4], [3, 3], [1, 2], [2, 3], [1, 2], [6, 6], [5, 5], [4, 4], [3, 3], [1, 2]];
+const st204Only = process.argv.includes('--st-204');
+const dice = [[6, 6], [5, 5], [4, 4], [3, 3], [1, 2], [2, 3], [1, 2], [6, 6]];
 const store = createRoomFileStore(join(directory, 'rooms.json'));
 const rooms = createRoomService({ board, rules, startingCash: 100, store });
 const localRooms = createRoomService({ board: vnNeighborhoodBoard, rules: vnOriginalRules, startingCash: 1200, store,
@@ -194,6 +195,128 @@ try {
   assert.equal(await desktop.run("document.querySelector('#local-board canvas') !== null"), true);
   assert.equal(await desktop.run("document.querySelectorAll('#local-spaces li').length"), 40);
   assert.equal(await desktop.run("document.querySelector('[data-command=Roll]').disabled || document.querySelector('#local-controls').disabled"), true);
+  if (st204Only) {
+    await handoff(desktop);
+    await seed((turn) => { turn.seats[0].position = 4; turn.decks.chance = ['VN-C10', ...turn.decks.chance.filter((id) => id !== 'VN-C10')]; });
+    dice.unshift([1, 2]);
+    await desktop.click(control('Roll')); await desktop.wait(enabled('EndTurn'));
+    const outcome = () => desktop.run("document.querySelector('#local-outcome').textContent");
+    assert.match(await outcome(), /Hoàn tất một đơn hàng/);
+    assert.match(await outcome(), /An.*70 xu.*Ngân hàng/);
+    assert.match(await outcome(), /An: 1[.,]270 xu/);
+    const cardState = await snapshot(desktop);
+    const destination = await desktop.run(`(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[${cardState.turn.seats[0].position}].labelKey]; })()`);
+    assert.ok((await outcome()).includes(`Hiện tại: ${destination}.`));
+    const savedOutcome = await outcome();
+    const revision = (await snapshot(desktop)).revision;
+    await desktop.call('Page.reload'); await desktop.wait("document.querySelector('#local-match')?.dataset.revision === '" + revision + "'");
+    await handoff(desktop); assert.equal(await outcome(), savedOutcome);
+    await seed((turn) => { turn.seats[0].position = 4; turn.decks.chance = ['VN-C01', ...turn.decks.chance.filter((id) => id !== 'VN-C01')]; });
+    dice.unshift([1, 2]);
+    await desktop.click(control('Roll')); await desktop.wait(enabled('EndTurn'));
+    const moved = await snapshot(desktop);
+    const movedName = await desktop.run(`(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[${moved.turn.seats[0].position}].labelKey]; })()`);
+    assert.ok((await outcome()).includes(`Hiện tại: ${movedName}.`));
+    assert.match(await outcome(), /160 xu khi qua quảng trường/);
+    await seed((turn) => {
+      turn.seats[0].position = 33; turn.seats[0].cash = 0;
+      turn.decks.chance = ['VN-C07', ...turn.decks.chance.filter((id) => id !== 'VN-C07')];
+      turn.decks.community = ['VN-M11', ...turn.decks.community.filter((id) => id !== 'VN-M11')];
+    });
+    dice.unshift([1, 2]);
+    await desktop.click(control('Roll')); await desktop.wait("document.querySelector('[data-command=SettleDebt]') !== null");
+    const chained = await snapshot(desktop);
+    assert.equal(chained.turn.pendingDebt.sourceId, 'VN-M11');
+    const cards = await desktop.run("[...document.querySelectorAll('#local-outcome-items li')].map((item) => item.textContent)");
+    assert.equal(cards.length, 2);
+    assert.ok(cards[0].includes('Quay lại tìm chiếc ô.'));
+    assert.ok(cards[1].includes('Mua cây cho sân chung.'));
+    assert.ok(!cards[0].includes('Hiện tại:') && !cards[0].includes('Đang chờ'));
+    assert.ok(cards[1].includes('Hiện tại:') && cards[1].includes('Đang chờ An trả 20 xu'));
+    await seed((turn) => { turn.phase = 'AwaitDebt'; turn.seats[0].cash = 80; turn.pendingDebt = { kind: 'payment', from: ids[0], to: ids[1], amount: 40, sourceId: 'VN-S39', ledgerType: 'RentPaid' }; turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }]; });
+    await desktop.run(`(() => { const original = window.fetch; let lost = false; window.fetch = async (path, options) => { const response = await original(path, options); if (!lost && path === '/api/local/command' && JSON.parse(options.body).type === 'SettleDebt') { lost = true; throw new TypeError('lost response'); } return response; }; })()`);
+    await desktop.click(control('SettleDebt')); await desktop.wait("!document.querySelector('#retry-command').disabled && !document.querySelector('#local-retry').hidden");
+    assert.match(await outcome(), /An.*40 xu.*Bình/);
+    const paid = await snapshot(desktop);
+    for (const seat of paid.turn.seats.slice(0, 2)) assert.ok((await outcome()).includes(new Intl.NumberFormat('vi-VN').format(seat.cash) + ' xu'));
+    assert.ok((await outcome()).includes(await desktop.run("(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[39].labelKey]; })()")));
+    const paymentOutcome = await outcome();
+    await desktop.click('#retry-command'); await desktop.wait(enabled('EndTurn'));
+    assert.equal(await outcome(), paymentOutcome); assert.equal((await snapshot(desktop)).turn.seats[0].cash, 40);
+    await desktop.run(`(() => { const original = window.fetch; let gap = false; window.fetch = async (path, options) => {
+      if (path.startsWith('/api/local/sync?since=') && !gap) { gap = true; return new Response(JSON.stringify({ error: 'ResyncRequired' }), { status: 409 }); }
+      const response = await original(path, options);
+      if (gap && path === '/api/local/sync?since=0') { const result = await response.json(); result.history = result.history.flatMap((row) => [row, row]); window.gapRecovered = true; return new Response(JSON.stringify(result)); }
+      return response;
+    }; })()`);
+    await desktop.wait("window.gapRecovered && document.querySelector('#local-announcement').textContent === ''");
+    assert.equal(await outcome(), paymentOutcome);
+    const recovered = await snapshot(desktop);
+    assert.deepEqual(recovered.turn, paid.turn);
+    for (const seat of recovered.turn.seats.slice(0, 2)) assert.ok((await outcome()).includes(new Intl.NumberFormat('vi-VN').format(seat.cash) + ' xu'));
+    assert.equal(await desktop.run("[...document.querySelectorAll('#local-history li')].filter((item) => item.textContent.includes('An trả 40 xu tiền thuê cho Bình')).length"), 1);
+    assert.equal(await desktop.run("[...document.querySelectorAll('#local-outcome-items li')].filter((item) => item.textContent.includes('An trả 40 xu tiền thuê cho Bình')).length"), 1);
+    assert.equal(await desktop.run("(() => { const h = JSON.parse(sessionStorage.getItem('local-game')).history; return h.length === new Set(h.map(({ revision }) => revision)).size; })()"), true);
+
+    await seed((turn) => { turn.phase = 'AwaitPurchase'; turn.purchase = { spaceId: 'VN-S01' }; turn.seats[0].position = 1; turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }]; });
+    await desktop.click(control('Decline')); await desktop.wait(enabled('Bid'));
+    assert.match(await outcome(), /10 xu/);
+    await choose(desktop, ids[2]); await desktop.click(control('Bid'));
+    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('Chi dẫn đầu')");
+    assert.equal(await desktop.run("document.querySelector('#local-bid').min"), '11');
+    assert.equal(await desktop.run("document.querySelector('[data-command=Pass]').disabled"), true);
+    for (const id of [ids[0], ids[1], ids[3]]) { await choose(desktop, id); await desktop.click(control('Pass')); await desktop.wait("!document.querySelector('#local-controls').disabled || !document.querySelector('#local-handoff').hidden"); }
+    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('thắng đấu giá')");
+    assert.ok((await outcome()).includes(await desktop.run("(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[1].labelKey]; })()")));
+    assert.equal((await snapshot(desktop)).turn.ownership['VN-S01'], ids[2]);
+    assert.equal((await outcome()).match(/thắng đấu giá/g).length, 1);
+    await seed((turn) => {
+      turn.phase = 'Auction'; turn.stock.houses = 1;
+      turn.ownership = { 'VN-S01': ids[0], 'VN-S03': ids[0], 'VN-S06': ids[1], 'VN-S08': ids[1], 'VN-S09': ids[1] };
+      turn.auction = { kind: 'building', targets: { [ids[0]]: 'VN-S01', [ids[1]]: 'VN-S06' }, eligibleSeatIds: [ids[0], ids[1]], highBid: null, resumePhase: 'AwaitEnd' };
+    });
+    await choose(desktop, ids[1]); await desktop.click(control('Bid'));
+    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('Bình dẫn đầu')");
+    await choose(desktop, ids[0]); await desktop.click(control('Pass'));
+    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('thắng đấu giá')");
+    const buildingState = await snapshot(desktop);
+    assert.equal(buildingState.turn.buildings['VN-S06'], 1);
+    assert.ok((await outcome()).includes(await desktop.run("(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[6].labelKey]; })()")));
+    await seed((turn) => { turn.phase = 'AwaitPurchase'; turn.purchase = { spaceId: 'VN-S01' }; turn.seats[0].position = 1; turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }]; });
+    await desktop.click(control('Decline')); await desktop.wait(enabled('Bid'));
+    for (const id of ids) { await choose(desktop, id); await desktop.click(control('Pass')); await desktop.wait("!document.querySelector('#local-controls').disabled || !document.querySelector('#local-handoff').hidden"); }
+    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('vẫn ở ngân hàng')");
+    const allPass = await snapshot(desktop);
+    assert.equal(allPass.turn.ownership['VN-S01'], undefined);
+    assert.equal(allPass.turn.auction, undefined);
+    await handoff(phone, true);
+    // Reuse the same authoritative match at phone width for equivalent outcome text.
+    const bundle = await desktop.run("sessionStorage.getItem('local-game')");
+    await phone.run(`sessionStorage.setItem('local-game', ${JSON.stringify(bundle)})`);
+    await phone.call('Page.reload'); await phone.wait("document.querySelector('#local-outcome')?.textContent.includes('vẫn ở ngân hàng')");
+    await handoff(phone, true); assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
+    assert.equal(await phone.run(`(() => { const outcome = document.querySelector('#local-outcome'); outcome.scrollIntoView({ block: 'center' }); const rect = outcome.getBoundingClientRect(); const style = getComputedStyle(outcome); return !outcome.hidden && style.display !== 'none' && style.visibility === 'visible' && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= 360 && rect.bottom > 0 && rect.top < innerHeight; })()`), true);
+    assert.deepEqual((await snapshot(phone)).turn, allPass.turn);
+
+    const disconnectedOutcome = await phone.run(`(() => {
+      const outcome = document.querySelector('#local-outcome');
+      const rect = outcome.getBoundingClientRect(); const style = getComputedStyle(outcome);
+      return { text: outcome.textContent, visible: !outcome.hidden && style.display !== 'none' && style.visibility === 'visible' && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= 360 && rect.bottom > 0 && rect.top < innerHeight, width: rect.width, height: rect.height };
+    })()`);
+    await phone.run("window.originalFetch = window.fetch; window.fetch = (path, options) => path.startsWith('/api/local/sync') ? Promise.reject(new TypeError('disconnect')) : window.originalFetch(path, options)");
+    await phone.wait("!document.querySelector('#local-connection').hidden && document.querySelector('#local-controls').disabled");
+    assert.deepEqual(await phone.run(`(() => {
+      const outcome = document.querySelector('#local-outcome');
+      const rect = outcome.getBoundingClientRect(); const style = getComputedStyle(outcome);
+      return { text: outcome.textContent, visible: !outcome.hidden && style.display !== 'none' && style.visibility === 'visible' && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= 360 && rect.bottom > 0 && rect.top < innerHeight, width: rect.width, height: rect.height };
+    })()`), disconnectedOutcome);
+    await phone.run('window.fetch = window.originalFetch'); await phone.wait(enabled('EndTurn'));
+    assert.deepEqual((await snapshot(phone)).turn, allPass.turn);
+    assert.equal(await phone.run("document.querySelector('#local-outcome').textContent"), await outcome());
+
+    await shot(desktop, 'family-monopoly-st204-desktop.png'); await shot(phone, 'family-monopoly-st204-phone.png');
+    console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-204 / AC-35, AC-36, AC-38', flows: ['accepted card and bank credit', 'payment cause and current balances', 'lost response and receipt retry', 'refresh', 'auction leader and minimum', 'settlement and all-pass', 'keyboard handoff', '360px touch and reduced motion', 'disconnect recovery', 'event-gap resync and duplicate history'] }, null, 2));
+  } else {
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
   await desktop.wait(enabled('Roll')); await desktop.click(control('Roll'));
   if (st203Only) {
@@ -263,6 +386,8 @@ try {
   assert.equal((await snapshot(desktop)).turn.seats[2].cash, 1184);
   await shot(desktop, 'family-monopoly-local-desktop.png');
 
+  // Saved decisions start from AwaitRoll, rather than the earlier purchase fixture.
+  baseTurn = initialTurn;
   // Saved decision fixtures use the same four sessions and production HTTP/UI path.
   await seed((turn) => { turn.seats[0].jailed = true; turn.seats[0].position = 10; turn.retainedCards[ids[0]] = ['VN-C09']; turn.decks.chance = turn.decks.chance.filter((id) => id !== 'VN-C09'); });
   await desktop.wait(enabled('UseReleaseCard')); await desktop.click(control('UseReleaseCard')); await desktop.wait(enabled('Roll'));
@@ -303,6 +428,7 @@ try {
   assert.match(await desktop.run("document.querySelector('#local-winner').textContent"), /Bình thắng/);
 
   assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
+  dice[0] = [1, 2]; // Keep this phone purchase fixture on a non-double turn.
   await handoff(phone, true); await phone.tap(control('Roll')); await phone.wait(enabled('Buy')); await assertCommittedRoll(phone);
   await phone.tap('#local-space-details summary'); assert.equal(await phone.run("document.querySelectorAll('#local-spaces li').length"), 40);
   await phone.tap(control('Buy')); await phone.wait(enabled('EndTurn'));
@@ -316,6 +442,7 @@ try {
   await shot(phone, 'family-monopoly-local-phone.png');
   assert.equal(dice.length, 0);
   console.log(JSON.stringify({ result: 'PASS', contracts: 'AC-33–38', peoplePerPage: 4, browser: 'Chrome 1440px keyboard and 360px touch, reduced motion', flows: ['setup', 'handoff', 'purchase refresh', 'lost-response retry', 'explicit auction actors', 'rent', 'jail fee and release card', 'debt liquidation and settlement', 'mortgage acquisition', 'trade confirmation', 'building and sale', 'building demand auction', 'hotel shortage liquidation', 'winner', 'offline recovery'], screenshots: ['/tmp/family-monopoly-local-desktop.png', '/tmp/family-monopoly-local-phone.png'] }, null, 2));
+  }
   }
 } finally {
   clearTimeout(deadline); socket?.close(); server?.stop(true);

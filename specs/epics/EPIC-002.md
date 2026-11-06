@@ -1,6 +1,6 @@
 # EPIC-002 · A delightful family game on one shared screen
 
-**Status:** Proposed plan, revised after owner feedback on 2026-11-06. Local play is the highest priority. Implement one approved backlog slice at a time. The wider-playtest gate in [B-09](../playtest-review.md) remains open.
+**Status:** In progress, revised after owner feedback on 2026-11-06. Local play is the highest priority. Implement one approved backlog slice at a time. The wider-playtest gate in [B-09](../playtest-review.md) remains open.
 
 ## Outcome
 
@@ -32,7 +32,7 @@ Canvas content needs equivalent HTML: a keyboard-operable space list with occupa
 
 ## Proposed implementation slices
 
-The [story knowledge base](EPIC-002-stories.md) records detailed scope, dependencies, acceptance evidence and current status for ST-201–ST-206. The slice labels are not assigned B-series backlog IDs. Select only the next slice for an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
+The [story knowledge base](EPIC-002-stories.md) records detailed scope, dependencies, acceptance evidence and current status for ST-201–ST-206. ST-204 is selected as B-14 and complete; remaining slices have no B-series backlog IDs yet. Select only the next slice for an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
 
 | Slice | Player story and scope | Acceptance evidence |
 | --- | --- | --- |

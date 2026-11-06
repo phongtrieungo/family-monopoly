@@ -84,7 +84,7 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
   }
   if (phase === 'Auction' && turn.auction.eligibleSeatIds.includes(actorId)) {
     const { highBid } = turn.auction; const min = (highBid?.amount ?? 9) + 1;
-    root.append(node('p', highBid ? `${person(highBid.seatId)} dẫn đầu với ${money(highBid.amount)}.` : 'Giá mở đầu 10 xu. Bỏ lượt là quyết định cuối cho cuộc đấu giá này.'));
+    root.append(node('p', highBid ? `${person(highBid.seatId)} dẫn đầu với ${money(highBid.amount)}. Giá đặt tối thiểu ${money(min)}. Bỏ lượt là quyết định cuối cho cuộc đấu giá này.` : 'Giá mở đầu 10 xu. Bỏ lượt là quyết định cuối cho cuộc đấu giá này.'));
     if (actor.cash >= min) {
       const form = node('form'); const input = numeric('local-bid', actor.cash, min, min);
       const send = node('button', 'Đặt giá'); send.dataset.command = 'Bid';
