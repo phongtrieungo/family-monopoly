@@ -24,4 +24,4 @@ With Bun 1.4.4, run the harness from the repository root.
 bun test
 ```
 
-The harness has zero package dependencies. It exercises AC-04 (purchase) and AC-06 (rent) through the reducer with scripted dice, and checks invalid boards and illegal transitions. The Gherkin files remain the acceptance contracts. See [ADR-005](specs/adr/README.md#adr-005--bun-domain-harness) for the stack decision.
+The harness has zero package dependencies. It exercises AC-04 (purchase) and AC-06 (rent) through the reducer with scripted dice, and checks invalid boards and illegal transitions. The authored full-match domain and room service also cover AC-11–32. The browser adapter continues to use the synthetic profile. See the [B-08 command contract, traceability and open client gates](specs/full-match-implementation.md). The Gherkin files remain the acceptance contracts. See [ADR-005](specs/adr/README.md#adr-005--bun-domain-harness) for the stack decision.

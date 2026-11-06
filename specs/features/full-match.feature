@@ -146,3 +146,44 @@ Feature: Resolve the original Vietnamese full-match profile
     And no first-request sale occurs
     When that seat reconnects
     Then it can respond at the latest room revision
+
+  @AC-28
+  Scenario: A third failed jail roll resumes after paying the release fee
+    Given a jailed seat has failed to roll doubles on two prior turns
+    And its cash is below the authored 50 xu release fee
+    When its third attempt is not doubles
+    Then the last roll is saved and the seat waits for debt resolution
+    When it raises enough cash and settles the fee
+    Then the seat is released and moves using that saved roll once
+    And that roll does not grant an extra turn
+
+  @AC-29
+  Scenario: Three consecutive ordinary doubles send the seat to jail
+    Given the active seat has resolved two consecutive doubles
+    When its next roll is also doubles
+    Then it moves directly to jail without resolving the rolled destination
+    And its turn awaits the end command
+
+  @AC-30
+  Scenario: A confirmed trade preserves mortgages and requires acquisition choices
+    Given two seats agree to transfer a mortgaged undeveloped street
+    When the receiving seat accepts the current offer
+    Then cash, deeds and retained cards transfer atomically
+    And the new owner chooses immediate release or keeping the mortgage
+    And no street in a developed group can be traded
+
+  @AC-31
+  Scenario: Service rent uses a separate authoritative roll
+    Given a rival owns both services and the landed service is unmortgaged
+    When the active seat lands there
+    Then the server records a separate rent roll
+    And the rent is ten times that roll's sum
+    And mortgaging the other service does not reduce the ownership count
+
+  @AC-32
+  Scenario: Development and liquidation conserve physical building tokens
+    Given a seat owns a complete unmortgaged street group
+    When it builds, upgrades or sells a building
+    Then development remains even across the group
+    And the bank's physical house and hotel totals are conserved
+    And a mortgage is rejected until all buildings in the group are sold

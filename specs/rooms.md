@@ -21,3 +21,7 @@ The prototype service runs in one process with synchronous room transactions. It
 Creation returns the invite and host session. Joining returns a separate guest session. Reconnect returns the caller's seat ID and latest snapshot. A connection change advances the revision only when the connected flag changes. A transport adapter is responsible for tracking live connections and calling disconnect when a seat's last connection closes.
 
 The service accepts revisioned Ready, Start and Close commands in the lobby. In a match it routes turn commands through the property reducer with the authenticated actor and server-supplied dice. The synthetic match starts with the host, equal configured cash, and all properties at the bank. The service exposes committed events after a supplied revision so a transport can resume delivery after a missed response. Start and join races resolve in commit order. A join that commits before Start changes the revision and requires the host to resync.
+
+## B-08 original-profile service
+
+Explicit service configuration selects the versioned original profile. Start saves server setup rolls, shuffled deck permutations and a pinned content snapshot. Public snapshots expose pending debts, acquisition choices, building demand, retained release cards and the winner, while hiding deck order and queued automatic work. The same revisions, atomic receipts and reconnect boundary apply to all full-match commands. See the [command contract and coverage](full-match-implementation.md).
