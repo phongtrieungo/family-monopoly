@@ -25,3 +25,9 @@ Specification-first family property-trading game with a shared-browser full-matc
 - Move to a higher model tier only when concrete failure or newly discovered complexity warrants it; carry forward useful findings instead of restarting the work.
 
 <!-- /bmad:context -->
+
+## Model-routing evidence
+
+- Treat `.codex/hooks.json` output as the runtime evidence of which model handled a request. The routing policy above guides selection but is not proof that a model ran.
+- Give delegated tasks a short, descriptive task name so `subagent:<agent-type>` usage lines remain attributable.
+- Report token counts only when the runtime supplies them; `tokens=unavailable` means unknown, not zero.
