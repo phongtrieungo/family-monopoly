@@ -109,7 +109,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 
 ## ST-205 · Manage, trade and recover
 
-**Status:** Proposed · **Epic slice:** S5 · **Depends on:** ST-204.
+**Status:** Done · **Epic slice:** S5 · **Depends on:** ST-204.
 
 **User story:** As a player facing a difficult decision, I can see what I own, what I owe and what each legal choice will do.
 
