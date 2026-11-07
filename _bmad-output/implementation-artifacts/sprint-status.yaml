@@ -1,7 +1,7 @@
 # Tracks EPIC-002 and its stable ST-201–ST-206 story IDs from this source.
 # Tracker keys preserve each ST number as the numeric story component.
 generated: 11-06-2026 22:34
-last_updated: 11-06-2026 23:59
+last_updated: 11-07-2026 00:47
 project: family-monopoly
 project_key: FAMILY-MONOPOLY
 tracking_system: file-system
@@ -13,6 +13,6 @@ development_status:
   2-202-game-table-and-setup: done
   2-203-turn-and-landing: done
   2-204-cards-payments-and-auctions: review
-  2-205-manage-trade-and-recover: backlog
+  2-205-manage-trade-and-recover: done
   2-206-finish-and-family-acceptance: backlog
   epic-2-retrospective: optional

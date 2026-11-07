@@ -79,13 +79,16 @@ test('AC-36: one shared-device disconnect and reconnect changes all local seats 
 
 test('AC-37: full-match public asset controls distinguish lawful construction, sale and mortgages', async () => {
   const { propertyOptions } = await import('../src/web/local-controls.js');
-  const turn = { ownership: { 'VN-S01': 'a', 'VN-S03': 'a' }, mortgages: {}, buildings: { 'VN-S01': 1 }, stock: { houses: 31, hotels: 12 } };
+  const turn = { ownership: { 'VN-S01': 'a', 'VN-S03': 'a', 'VN-S06': 'a' }, mortgages: {}, buildings: { 'VN-S01': 1 }, stock: { houses: 31, hotels: 12 } };
   let choices = propertyOptions(turn, vnNeighborhoodBoard, 'a');
   expect(choices.find(({ space }) => space.id === 'VN-S01').canBuild).toBe(false);
   expect(choices.find(({ space }) => space.id === 'VN-S03').canBuild).toBe(true);
-  expect(choices.every(({ canMortgage }) => !canMortgage)).toBe(true);
+  expect(choices.find(({ space }) => space.id === 'VN-S01').canMortgage).toBe(false);
+  expect(choices.find(({ space }) => space.id === 'VN-S03').canMortgage).toBe(false);
   expect(choices.find(({ space }) => space.id === 'VN-S01').canSell).toBe(true);
-  turn.mortgages['VN-S03'] = true;
+  expect(choices.find(({ space }) => space.id === 'VN-S06').canMortgage).toBe(true);
+  turn.mortgages['VN-S06'] = true;
   choices = propertyOptions(turn, vnNeighborhoodBoard, 'a');
-  expect(choices.every(({ canBuild }) => !canBuild)).toBe(true);
+  expect(choices.find(({ space }) => space.id === 'VN-S03').canBuild).toBe(true);
+  expect(choices.find(({ space }) => space.id === 'VN-S06').canMortgage).toBe(false);
 });

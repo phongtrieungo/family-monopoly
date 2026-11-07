@@ -12,7 +12,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | [ST-202](#st-202--game-table-and-setup) | S2 · Game table and setup | Done | ST-201 decision | B-12 · implementation complete; owner manually validated the running game |
 | [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Done | ST-202 | B-13 · focused acceptance passed; [PR #15](https://github.com/phongtrieungo/family-monopoly/pull/15) |
 | [ST-204](#st-204--cards-payments-and-auctions) | S4 · Cards, payments and auctions | Done | ST-203 | B-14 · focused and full browser acceptance passed; [implementation story](../../_bmad-output/implementation-artifacts/2-204-cards-payments-and-auctions.md) |
-| [ST-205](#st-205--manage-trade-and-recover) | S5 · Manage, trade and recover | Proposed | ST-204 | Not started |
+| [ST-205](#st-205--manage-trade-and-recover) | S5 · Manage, trade and recover | Done | ST-204 | B-15 · focused and full local browser acceptance passed; UI tests and build passed |
 | [ST-206](#st-206--finish-and-family-acceptance) | S6 · Finish and family acceptance | Proposed | ST-205 | Not started |
 
 **Completed slice:** ST-201 is B-11 and ST-202 is B-12. The owner manually validated ST-202 on 2026-11-06 and directed that the failing automated handoff check be bypassed. B-09 human review and wider-playtest decisions remain open; they do not imply approval of a new illustration, rule, deployment or distribution.
@@ -109,7 +109,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 
 ## ST-205 · Manage, trade and recover
 
-**Status:** Proposed · **Epic slice:** S5 · **Depends on:** ST-204.
+**Status:** Done · **Epic slice:** S5 · **Depends on:** ST-204.
 
 **User story:** As a player facing a difficult decision, I can see what I own, what I owe and what each legal choice will do.
 
@@ -163,3 +163,5 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | 2026-11-06 | ST-204 | Ready → In progress | Owner approved the ST-204 implementation spec; work started in the isolated `codex/st-204-cards-payments-auctions` worktree. |
 
 | 2026-11-06 | ST-204 | In progress → Done | Focused and full Chrome acceptance, 68 tests, web build, review fixes, matrix coverage and diff checks passed. Review findings were patched or disproved and recorded in the implementation spec. B-09 gates remain separate. |
+| 2026-11-07 | ST-205 | Proposed → In progress | Owner selected the ST-205 implementation spec as B-15 after ST-204; presentation changes only, with engine and rule contracts preserved. |
+| 2026-11-07 | ST-205 | In progress → Done | Focused ST-205 and full local Chrome acceptance passed at desktop and 360px touch widths, including debt retry/recovery, mortgaged trade review/back/acceptance, acquisition charges, jail, development, shortage liquidation and handoffs. 68 Bun tests and web build passed. B-09 review gates remain separate. |

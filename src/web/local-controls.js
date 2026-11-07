@@ -69,8 +69,8 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
   if (debtor) {
     const debt = turn.pendingDebt;
     const potential = actor.cash + assets.filter(({ canMortgage }) => canMortgage).reduce((sum, { space }) => sum + (space.economy?.price ?? space.price) / 2, 0);
-    root.append(node('p', `Cần trả ${money(debt.amount)} cho ${person(debt.to)}. Có thể bán công trình, thế chấp hoặc thương lượng giao dịch để đủ tiền.`));
-    root.append(act('SettleDebt', `Thanh toán ${money(debt.amount)}`, {}, actor.cash >= debt.amount));
+    root.append(node('p', `${person(actorId)} đang có ${money(actor.cash)} và cần trả ${money(debt.amount)} cho ${person(debt.to)}. Có thể bán công trình, thế chấp tài sản chưa phát triển hoặc đề nghị giao dịch trước khi thanh toán.`));
+    root.append(act('SettleDebt', `Thanh toán ${money(debt.amount)} cho ${person(debt.to)}`, {}, actor.cash >= debt.amount));
     const noBuildings = assets.every(({ level }) => level === 0);
     const bankrupt = noBuildings && potential < debt.amount;
     root.append(act('Bankrupt', 'Xác nhận phá sản và chuyển tài sản', {}, bankrupt));
@@ -111,8 +111,18 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
     if (turn.trade) {
       const trade = turn.trade; const box = node('section');
       box.append(node('h3', 'Giao dịch đang chờ'), node('p', `${person(trade.proposerSeatId)} đề nghị với ${person(trade.targetSeatId)}.`));
-      const terms = (side) => [money(side.cash), ...side.properties.map(title), ...side.cards.map((id) => cardCopy[id])].join(' · ');
-      box.append(node('p', `${person(trade.proposerSeatId)} đưa: ${terms(trade.give)}`), node('p', `${person(trade.targetSeatId)} đưa: ${terms(trade.receive)}`));
+      const terms = (from, to, side) => {
+        const lines = [`Tiền: ${money(side.cash)}`];
+        for (const id of side.properties) {
+          const mortgaged = turn.mortgages[id];
+          const property = board.spaces.find((entry) => entry.id === id);
+          const principal = (property.economy?.price ?? property.price) / 2;
+          lines.push(`${title(id)}${mortgaged ? ` · thế chấp: ${person(to)} chọn giữ (trả ${money(Math.ceil(principal / 10))}) hoặc giải chấp (trả ${money(principal + Math.ceil(principal / 10))})` : ''}`);
+        }
+        lines.push(...side.cards.map((id) => cardCopy[id] ?? id));
+        return lines.join(' · ');
+      };
+      box.append(node('p', `${person(trade.proposerSeatId)} đưa: ${terms(trade.proposerSeatId, trade.targetSeatId, trade.give)}`), node('p', `${person(trade.targetSeatId)} đưa: ${terms(trade.targetSeatId, trade.proposerSeatId, trade.receive)}`));
       if (actorId === trade.targetSeatId) box.append(act('AcceptTrade', 'Đồng ý chuyển tiền và tài sản'));
       else box.append(button('TradeHandoff', `Chuyền máy cho ${person(trade.targetSeatId)} xem đề nghị`, () => selectActor(trade.targetSeatId)));
       if ([trade.proposerSeatId, trade.targetSeatId].includes(actorId)) box.append(act('CancelTrade', 'Hủy đề nghị giao dịch'));
@@ -152,7 +162,7 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
   function tradeControls() {
     const details = node('details'); details.id = 'trade-details'; details.append(node('summary', 'Đề nghị giao dịch tiền, tài sản hoặc giấy ra'));
     const others = turn.seats.filter((entry) => !entry.eliminated && entry.id !== actorId);
-    const target = options(others.map(({ id }) => [id, person(id)]), 'trade-target'); const sides = node('div'); const form = node('form'); let readSides;
+    const target = options(others.map(({ id }) => [id, person(id)]), 'trade-target'); const sides = node('div'); const form = node('form'); let readSides; let reviewedOffer;
     const update = () => {
       sides.replaceChildren(); const targetPlayer = turn.seats.find(({ id }) => id === target.value);
       const side = (id, name, cash) => {
@@ -166,8 +176,39 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
       const give = side(actorId, `${person(actorId)} đưa`, actor.cash); const receive = side(target.value, `${person(target.value)} đưa`, targetPlayer.cash);
       readSides = () => ({ give: give(), receive: receive() });
     };
-    target.addEventListener('change', update); update(); const send = node('button', 'Gửi đề nghị để người kia xác nhận'); send.dataset.command = 'OfferTrade';
-    form.append(wrap('Giao dịch với', target), sides, node('p', 'Người nhận phải xác nhận. Tài sản thế chấp tạo thêm khoản lãi phải trả cho chủ mới.', 'local-note'), send);
-    form.addEventListener('submit', (event) => { event.preventDefault(); submit('OfferTrade', { targetSeatId: target.value, ...readSides() }); }); details.append(form); return details;
+    target.addEventListener('change', update); update();
+    const review = node('section'); review.className = 'trade-review'; review.hidden = true;
+    const reviewText = node('p'); reviewText.setAttribute('aria-live', 'polite');
+    const confirm = node('button', 'Gửi đề nghị giao dịch'); confirm.type = 'button'; confirm.dataset.command = 'ConfirmOfferTrade';
+    const back = node('button', 'Quay lại sửa'); back.type = 'button'; back.className = 'secondary';
+    const lockEditor = (locked) => form.querySelectorAll('input, select').forEach((input) => { input.disabled = locked; });
+    const revise = () => { reviewedOffer = undefined; lockEditor(false); review.hidden = true; form.querySelector('[data-command="OfferTrade"]').hidden = false; form.querySelector('#trade-target').focus(); };
+    back.addEventListener('click', revise);
+    confirm.addEventListener('click', () => { if (reviewedOffer) submit('OfferTrade', reviewedOffer); });
+    review.append(node('h4', 'Xem lại hai bên trước khi gửi'), reviewText, confirm, back);
+    const send = node('button', 'Xem lại đề nghị trước khi gửi'); send.type = 'submit'; send.dataset.command = 'OfferTrade';
+    form.append(wrap('Giao dịch với', target), sides, node('p', 'Người nhận phải xác nhận. Nếu nhận tài sản đang thế chấp, người nhận sẽ được hỏi giữ thế chấp hay giải chấp và thấy khoản phải trả.', 'local-note'), review, send);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const offer = { targetSeatId: target.value, ...readSides() };
+      const terms = (from, to, side) => {
+        const items = [`${person(from)} đưa ${money(side.cash)}`];
+        for (const propertyId of side.properties) {
+          const property = board.spaces.find((entry) => entry.id === propertyId);
+          const principal = (property.economy?.price ?? property.price) / 2;
+          items.push(`${title(propertyId)}${turn.mortgages[propertyId] ? ` (đang thế chấp; ${person(to)} chọn giữ và trả ${money(Math.ceil(principal / 10))}, hoặc giải chấp và trả ${money(principal + Math.ceil(principal / 10))})` : ''}`);
+        }
+        items.push(...side.cards.map((id) => cardCopy[id] ?? id));
+        return items.join(' · ');
+      };
+      reviewedOffer = {
+        targetSeatId: offer.targetSeatId,
+        give: { ...offer.give, properties: [...offer.give.properties], cards: [...offer.give.cards] },
+        receive: { ...offer.receive, properties: [...offer.receive.properties], cards: [...offer.receive.cards] },
+      };
+      reviewText.textContent = `${terms(actorId, offer.targetSeatId, offer.give)}. ${terms(offer.targetSeatId, actorId, offer.receive)}. ${person(offer.targetSeatId)} sẽ nhận và quyết định có chấp nhận không.`;
+      lockEditor(true); review.hidden = false; send.hidden = true; confirm.focus();
+    });
+    details.append(form); return details;
   }
 }

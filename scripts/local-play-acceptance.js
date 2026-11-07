@@ -12,6 +12,7 @@ import { createRequestHandler } from '../src/web/server.js';
 const directory = mkdtempSync(join(tmpdir(), 'family-monopoly-acceptance-'));
 const st203Only = process.argv.includes('--st-203');
 const st204Only = process.argv.includes('--st-204');
+const st205Only = process.argv.includes('--st-205');
 const dice = [[6, 6], [5, 5], [4, 4], [3, 3], [1, 2], [2, 3], [1, 2], [6, 6]];
 const store = createRoomFileStore(join(directory, 'rooms.json'));
 const rooms = createRoomService({ board, rules, startingCash: 100, store });
@@ -316,6 +317,109 @@ try {
 
     await shot(desktop, 'family-monopoly-st204-desktop.png'); await shot(phone, 'family-monopoly-st204-phone.png');
     console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-204 / AC-35, AC-36, AC-38', flows: ['accepted card and bank credit', 'payment cause and current balances', 'lost response and receipt retry', 'refresh', 'auction leader and minimum', 'settlement and all-pass', 'keyboard handoff', '360px touch and reduced motion', 'disconnect recovery', 'event-gap resync and duplicate history'] }, null, 2));
+  } else if (st205Only) {
+    await handoff(desktop);
+    await seed((turn) => {
+      turn.phase = 'AwaitDebt'; turn.seats[0].cash = 0; turn.ownership = { 'VN-S01': ids[0] };
+      turn.pendingDebt = { kind: 'payment', from: ids[0], to: ids[1], amount: 20, ledgerType: 'RentPaid', sourceId: 'VN-S39' };
+      turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }];
+    });
+    await desktop.wait("document.querySelector('#local-context').textContent.includes('20 xu')");
+    await desktop.click('#asset-details summary'); await desktop.click(control('Mortgage'));
+    await desktop.wait("document.querySelector('#local-context').textContent.includes('20 xu')");
+    await desktop.wait(enabled('SettleDebt')); await desktop.click(control('SettleDebt')); await desktop.wait(enabled('EndTurn'));
+    assert.equal((await snapshot(desktop)).turn.seats[0].cash, 20);
+    const paymentsBeforeRetry = store.read().find((entry) => entry.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'RentPaid').length;
+
+    // A lost settlement response is retried exactly once after refresh.
+    await seed((turn) => {
+      turn.phase = 'AwaitDebt'; turn.seats[0].cash = 80; turn.pendingDebt = { kind: 'payment', from: ids[0], to: ids[1], amount: 40, ledgerType: 'RentPaid', sourceId: 'VN-S39' };
+      turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }];
+    });
+    await desktop.run(`(() => { const original = window.fetch; let lost = false; window.fetch = async (path, options) => { const response = await original(path, options); if (!lost && path === '/api/local/command' && JSON.parse(options.body).type === 'SettleDebt') { lost = true; throw new TypeError('lost response'); } return response; }; })()`);
+    await desktop.click(control('SettleDebt')); await desktop.wait("!document.querySelector('#local-retry').hidden && !document.querySelector('#retry-command').disabled");
+    const paidSnapshot = await snapshot(desktop); assert.equal(paidSnapshot.turn.seats[0].cash, 40);
+    const paidEvents = store.read().find((entry) => entry.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'RentPaid');
+    assert.equal(paidEvents.length, paymentsBeforeRetry + 1);
+    await desktop.call('Page.reload'); await desktop.wait("!document.querySelector('#local-retry').hidden");
+    assert.equal((await snapshot(desktop)).turn.seats[0].cash, 40);
+    await desktop.click('#retry-command'); await desktop.wait("!document.querySelector('#local-handoff').hidden"); await handoff(desktop); await desktop.wait(enabled('EndTurn'));
+    assert.equal(store.read().find((entry) => entry.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'RentPaid').length, paymentsBeforeRetry + 1);
+
+    // Reject a stale settlement without hiding the pending debt; the player can issue a fresh intent.
+    await seed((turn) => {
+      turn.phase = 'AwaitDebt'; turn.seats[0].cash = 80; turn.pendingDebt = { kind: 'payment', from: ids[0], to: ids[1], amount: 40, ledgerType: 'RentPaid', sourceId: 'VN-S39' };
+      turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }];
+    });
+    const staleRoom = store.read().find((entry) => entry.id === roomId); staleRoom.revision += 1; staleRoom.history.push({ revision: staleRoom.revision, events: [] });
+    store.write(store.read().map((entry) => entry.id === roomId ? staleRoom : entry));
+    await desktop.click(control('SettleDebt'));
+    await desktop.wait("document.querySelector('#local-error').textContent.includes('Ván chơi vừa thay đổi')");
+    await desktop.wait("document.querySelector('#local-context').textContent.includes('40 xu')");
+    assert.equal((await snapshot(desktop)).turn.seats[0].cash, 80);
+    await desktop.click(control('SettleDebt')); await desktop.wait(enabled('EndTurn'));
+    assert.equal((await snapshot(desktop)).turn.seats[0].cash, 40);
+
+    // Review a mortgaged trade, navigate back to edit, then let only the target accept.
+    await seed((turn) => {
+      turn.phase = 'AwaitEnd'; turn.pendingDebt = undefined; turn.trade = undefined; turn.seats[0].cash = 100; turn.seats[1].cash = 100;
+      turn.ownership = { 'VN-S01': ids[0], 'VN-S39': ids[1] }; turn.mortgages = { 'VN-S01': true };
+      turn.buildings = {}; turn.queue = [];
+    });
+    await desktop.click('#trade-details summary');
+    await desktop.run(`(() => { document.querySelector('#trade-properties-${ids[0]}').options[0].selected = true; document.querySelector('#trade-cash-${ids[1]}').value = 20; })()`);
+    await desktop.click(control('OfferTrade'));
+    await desktop.wait("!document.querySelector('.trade-review').hidden");
+    const review = await desktop.run("document.querySelector('.trade-review').textContent");
+    assert.match(review, /VN-S01|phố|đang thế chấp/); assert.match(review, /Bình chọn giữ/); assert.match(review, /4 xu/);
+    await desktop.click(".trade-review button.secondary"); assert.equal(await desktop.run("document.querySelector('.trade-review').hidden"), true);
+    await desktop.run(`document.querySelector('#trade-cash-${ids[1]}').value = 22`);
+    await desktop.click(control('OfferTrade')); await desktop.wait("!document.querySelector('.trade-review').hidden");
+    const revisedReview = await desktop.run("document.querySelector('.trade-review').textContent");
+    assert.match(revisedReview, /22 xu/); assert.equal(await desktop.run(`document.querySelector('#trade-cash-${ids[1]}').disabled`), true);
+    await desktop.run(`document.querySelector('#trade-cash-${ids[1]}').value = 99`);
+    await desktop.click(control('ConfirmOfferTrade')); await desktop.wait(enabled('TradeHandoff'));
+    const proposerTerms = await desktop.run("document.querySelector('#local-actions').textContent");
+    assert.match(proposerTerms, /Bình đưa: Tiền: 22 xu/); assert.doesNotMatch(proposerTerms, /99 xu/);
+    await desktop.click(control('TradeHandoff')); await handoff(desktop);
+    await desktop.wait(enabled('AcceptTrade'));
+    const targetTerms = await desktop.run("document.querySelector('#local-actions').textContent");
+    assert.match(targetTerms, /thế chấp/); assert.match(targetTerms, /giải chấp/);
+    await desktop.click(control('AcceptTrade')); await desktop.wait(enabled('ChooseMortgage'));
+    const acquisition = await desktop.run("document.querySelector('#local-actions').textContent");
+    assert.match(acquisition, /trả ngay/); assert.match(acquisition, /giải chấp ngay/);
+    await desktop.click(control('ChooseMortgage')); await desktop.wait("!document.querySelector('#local-handoff').hidden"); await handoff(desktop); await desktop.wait(enabled('EndTurn'));
+    const traded = await snapshot(desktop); assert.equal(traded.turn.ownership['VN-S01'], ids[1]);
+    assert.equal(traded.turn.seats[1].cash, 74);
+
+    // The recipient can cancel before any cash or property is committed.
+    await seed((turn) => {
+      turn.phase = 'AwaitEnd'; turn.trade = undefined; turn.pendingDebt = undefined; turn.seats[0].cash = 100; turn.seats[1].cash = 100;
+      turn.ownership = { 'VN-S01': ids[0], 'VN-S39': ids[1] }; turn.mortgages = { 'VN-S01': true }; turn.buildings = {}; turn.queue = [];
+    });
+    await desktop.click('#trade-details summary');
+    await desktop.run(`(() => { document.querySelector('#trade-cash-${ids[0]}').value = 10; document.querySelector('#trade-cash-${ids[1]}').value = 5; })()`);
+    await desktop.click(control('OfferTrade')); await desktop.wait("!document.querySelector('.trade-review').hidden"); await desktop.click(control('ConfirmOfferTrade'));
+    await desktop.wait(enabled('TradeHandoff')); await desktop.click(control('TradeHandoff')); await handoff(desktop);
+    await desktop.wait(enabled('CancelTrade')); await desktop.click(control('CancelTrade'));
+    await desktop.wait("document.querySelector('#local-history').textContent.includes('hủy đề nghị')");
+    const canceled = await snapshot(desktop); assert.equal(canceled.turn.seats[0].cash, 100); assert.equal(canceled.turn.seats[1].cash, 100);
+
+    const mobileBundle = await desktop.run("sessionStorage.getItem('local-game')");
+    await phone.run(`sessionStorage.setItem('local-game', ${JSON.stringify(mobileBundle)})`); await phone.call('Page.reload');
+    await phone.wait("document.querySelector('#local-match')?.dataset.revision === '" + canceled.revision + "'");
+    await handoff(phone, true); await phone.tap('#trade-details summary');
+    assert.equal(await phone.run("document.querySelector('#trade-details').open"), true);
+    assert.equal(await phone.run(`(() => { const target = document.querySelector('#trade-properties-${ids[0]}'); if (!target?.options.length) throw Error('Expected an available mobile trade property'); target.options[0].selected = true; return target.options[0].selected; })()`), true);
+    await phone.tap(control('OfferTrade')); await phone.wait("!document.querySelector('.trade-review').hidden");
+    assert.ok(await phone.run("document.querySelector('[data-command=ConfirmOfferTrade]').getBoundingClientRect().height >= 44"));
+    await phone.tap(control('ConfirmOfferTrade')); await phone.wait(enabled('TradeHandoff'));
+    await phone.tap(control('TradeHandoff')); await handoff(phone, true); await phone.wait(enabled('AcceptTrade'));
+    await phone.tap(control('AcceptTrade')); await phone.wait(enabled('ChooseMortgage'));
+    await phone.tap(control('ChooseMortgage')); await phone.wait("!document.querySelector('#local-handoff').hidden"); await handoff(phone, true);
+    await phone.wait("document.documentElement.scrollWidth === 360");
+    assert.ok(await phone.run("document.querySelector('[data-command=EndTurn]').getBoundingClientRect().height >= 44"));
+    console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-205 / AC-11, AC-19–21, AC-24–32, AC-36–38', browser: 'Chrome desktop keyboard and 360px touch viewport, reduced motion', flows: ['debt identity and lawful mortgage liquidation', 'lost settlement response, refresh and exact retry', 'stale rejection retains debt context for fresh intent', 'two-sided mortgaged trade review with frozen confirmed terms', 'edit after review', 'recipient cancellation without settlement', 'target-only acceptance and acquisition charges', 'keyboard and touch handoffs', '360px trade review controls'] }, null, 2));
   } else {
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
   await desktop.wait(enabled('Roll')); await desktop.click(control('Roll'));
@@ -405,7 +509,8 @@ try {
   await seed((turn) => { turn.ownership = { 'VN-S01': ids[0] }; });
   await desktop.click('#trade-details summary');
   await desktop.run(`(() => { document.querySelector('#trade-properties-${ids[0]}').options[0].selected = true; document.querySelector('#trade-cash-${ids[1]}').value = 20; })()`);
-  await desktop.click(control('OfferTrade')); await desktop.wait(enabled('TradeHandoff')); await desktop.click(control('TradeHandoff')); await handoff(desktop);
+  await desktop.click(control('OfferTrade')); await desktop.wait(enabled('ConfirmOfferTrade')); await desktop.click(control('ConfirmOfferTrade'));
+  await desktop.wait(enabled('TradeHandoff')); await desktop.click(control('TradeHandoff')); await handoff(desktop);
   await desktop.wait(enabled('AcceptTrade')); await desktop.click(control('AcceptTrade'));
   await desktop.wait("document.querySelector('#local-history').textContent.includes('hoàn tất giao dịch')"); assert.equal((await snapshot(desktop)).turn.ownership['VN-S01'], ids[1]);
 
