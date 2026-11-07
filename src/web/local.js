@@ -16,6 +16,7 @@ let online = false;
 let syncing;
 let errorCode;
 let boardView;
+let renderedFinished = false;
 let lastRoll = game?.lastRoll ?? null;
 const credential = (id) => game?.sessions.find((entry) => entry.seatId === id)?.session;
 const person = (id) => state?.seats.find((entry) => entry.id === id)?.name ?? 'Ngân hàng';
@@ -38,6 +39,7 @@ async function api(path, body, session) {
 }
 function candidates() {
   const { turn } = state; const live = turn.seats.filter((seat) => !seat.eliminated).map((seat) => seat.id);
+  if (turn.phase === 'Finished') return [];
   if (turn.phase === 'Auction') return turn.auction.eligibleSeatIds;
   if (turn.phase === 'BuildingDemand') return turn.buildingDemand.eligibleSeatIds.filter((id) => !Object.hasOwn(turn.buildingDemand.responses, id));
   if (turn.phase === 'BuildingOffer') return [turn.buildingDemand.offeredSeatId];
@@ -55,7 +57,8 @@ function selectActor(id) {
 }
 function locks() {
   $('local-connection').hidden = online || !game;
-  $('local-controls').disabled = busy || !online || !!pending || acknowledgedSeatId !== actorId;
+  $('local-controls').hidden = state?.turn.phase === 'Finished';
+  $('local-controls').disabled = state?.turn.phase === 'Finished' || busy || !online || !!pending || acknowledgedSeatId !== actorId;
   $('local-actor').disabled = busy || !online || !!pending;
   $('confirm-handoff').disabled = busy || !online || !!pending;
   $('retry-command').disabled = busy || !online;
@@ -153,6 +156,10 @@ function render({ motion } = {}) {
   const oldActor = $('local-actor').value;
   const wasHandoff = !$('local-handoff').hidden;
   const { turn } = state;
+  const finished = state.status === 'Finished' && turn.phase === 'Finished';
+  const enteringFinish = finished && !renderedFinished;
+  renderedFinished = finished;
+  $('local-phase-label').textContent = finished ? 'CẢ NHÀ ĐÃ HOÀN THÀNH' : 'ĐANG CHỜ AI?';
   const required = preferred(); const key = `${turn.phase}:${required}`;
   const allowed = candidates();
   if (requiredKey !== key && !['Auction', 'BuildingDemand'].includes(turn.phase)) actorId = required;
@@ -168,8 +175,8 @@ function render({ motion } = {}) {
   if (turn.pendingDebt) context = `${person(turn.pendingDebt.from)} cần trả ${money(turn.pendingDebt.amount)} cho ${person(turn.pendingDebt.to)}. ${cardCopy[turn.pendingDebt.sourceId] ?? (turn.pendingDebt.sourceId === 'jail' ? 'Phí ra nhà chờ' : spaceName(turn.pendingDebt.sourceId))}`;
   if (turn.phase === 'Auction') context = turn.auction.kind === 'building' ? 'Công trình cuối đang được giữ cho cuộc đấu giá. Chọn rõ người đặt giá.' : `Đấu giá ${spaceName(turn.auction.spaceId)}. Chọn rõ người đặt giá hoặc bỏ lượt.`;
   if (turn.phase === 'BuildingDemand') context = 'Công trình cuối được giữ lại. Mọi người được mời cần đăng ký ô hợp lệ hoặc từ chối.';
-  $('local-context').textContent = context;
-  $('local-roll-result').textContent = rollText(lastRoll);
+  $('local-context').textContent = finished ? 'Ván chơi đã kết thúc. Không còn lượt hoặc quyết định cần thực hiện.' : context;
+  $('local-roll-result').textContent = finished ? '' : rollText(lastRoll);
   const chooser = $('local-actor'); chooser.replaceChildren(...allowed.map((id) => { const option = node('option', person(id)); option.value = id; return option; })); chooser.value = actorId;
   $('local-actor-label').hidden = turn.phase === 'Finished';
   const gate = acknowledgedSeatId !== actorId && turn.phase !== 'Finished';
@@ -182,12 +189,20 @@ function render({ motion } = {}) {
   if (turn.phase !== 'Finished' && actorId !== required && allowed.includes(required) && !['Auction', 'BuildingDemand'].includes(turn.phase)) {
     const back = node('button', `Chuyền về ${person(required)} để tiếp tục lượt`); back.type = 'button'; back.addEventListener('click', () => selectActor(required)); $('local-actions').prepend(back);
   }
-  $('local-winner').hidden = turn.phase !== 'Finished';
-  $('local-winner').replaceChildren(node('h3', turn.winnerSeatId ? `${person(turn.winnerSeatId)} thắng ván chơi!` : ''), node('p', 'Cả nhà có thể bắt đầu ván mới từ nút phía trên.'));
+  $('local-winner').hidden = !finished;
+  if (finished && !$('local-announcement').textContent) $('local-announcement').textContent = `${person(turn.winnerSeatId)} thắng ván chơi! Cảm ơn cả nhà đã cùng chơi.`;
+  $('local-finish-heading').textContent = finished && turn.winnerSeatId ? `${person(turn.winnerSeatId)} thắng ván chơi!` : '';
+  $('local-final-seats').replaceChildren(...turn.seats.map((seat) => {
+    const properties = board.spaces.filter((space) => turn.ownership[space.id] === seat.id).map((space) => {
+      const level = turn.buildings[space.id] ?? 0;
+      return `${spaceName(space.id)}${turn.mortgages[space.id] ? ' (thế chấp)' : ''}${level ? ` · ${level === 5 ? '1 khách sạn' : level + ' nhà'}` : ''}`;
+    });
+    return node('li', `${person(seat.id)} · ${money(seat.cash)} · ${seat.eliminated ? 'Đã phá sản' : 'Không phá sản'}. Tài sản: ${properties.length ? properties.join('; ') : 'Không có'}.`);
+  }));
   $('local-players').replaceChildren(...turn.seats.map((seat, index) => {
-    const item = node('li', '', `panel player-card${seat.id === actorId ? ' selected' : ''}`);
+    const item = node('li', '', `panel player-card${!finished && seat.id === actorId ? ' selected' : ''}`);
     const held = (turn.retainedCards[seat.id] ?? []).map((id) => cardCopy[id]).join(' · ');
-    item.append(node('strong', `${index + 1}. ${person(seat.id)}${seat.id === turn.activeSeatId ? ' · đang đến lượt' : ''}`), node('span', money(seat.cash)), node('small', seat.eliminated ? 'Đã phá sản' : seat.jailed ? `Nhà chờ · ${seat.jailAttempts}/3 lần thử` : spaceName(board.spaces[seat.position].id)));
+    item.append(node('strong', `${index + 1}. ${person(seat.id)}${!finished && seat.id === turn.activeSeatId ? ' · đang đến lượt' : ''}`), node('span', money(seat.cash)), node('small', seat.eliminated ? 'Đã phá sản' : seat.jailed ? `Nhà chờ · ${seat.jailAttempts}/3 lần thử` : spaceName(board.spaces[seat.position].id)));
     if (held) item.append(node('small', `Giấy ra: ${held}`)); return item;
   }));
   if (!boardView) boardView = createBoardView($('local-board'));
@@ -201,11 +216,13 @@ function render({ motion } = {}) {
     if (space.type === 'transit') detail = ` Giá ${money(space.price)}; thuê theo 1–4 bến: ${board.transit.rents.map(money).join(', ')}.`;
     if (space.type === 'service') detail = ` Giá ${money(space.price)}; thuê bằng 4 hoặc 10 lần tổng một lần gieo riêng.`;
     if (space.type === 'tax') detail = ` Nộp ${money(space.amount)}.`;
-    const item = node('li', `Ô ${space.position + 1} · ${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${occupants.length ? ` Đang ở đây: ${occupants.join(', ')}.` : ''}${space.position === active.position ? ' Vị trí của người đang đến lượt.' : ''}${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
+    const item = node('li', `Ô ${space.position + 1} · ${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${occupants.length ? ` Đang ở đây: ${occupants.join(', ')}.` : ''}${!finished && space.position === active.position ? ' Vị trí của người đang đến lượt.' : ''}${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
   }));
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
   renderOutcome();
+  if (finished) $('local-outcome').hidden = true;
   locks();
+  if (enteringFinish) $('local-finish-heading').focus();
   if (gate && (!wasHandoff || oldActor !== actorId)) $('handoff-heading').focus();
   save();
 }
@@ -247,7 +264,8 @@ async function syncNow() {
       } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
       render({ motion });
       const announcement = (resynced || !before ? [] : accepted).flatMap(({ events }) => events.map(describe)).filter(Boolean).join(' ');
-      $('local-announcement').textContent = announcement || (before?.turn.phase !== state.turn.phase ? `${phases[state.turn.phase]} · ${person(preferred())}` : '');
+      const finishedAnnouncement = state.status === 'Finished' ? `${person(state.turn.winnerSeatId)} thắng ván chơi! Cảm ơn cả nhà đã cùng chơi.` : '';
+      $('local-announcement').textContent = announcement || finishedAnnouncement || (before?.turn.phase !== state.turn.phase ? `${phases[state.turn.phase]} · ${person(preferred())}` : '');
     }
     locks();
   } catch (failure) { online = false; if (failure.message !== 'Network' || pending) error(failure.message); else error(); locks(); }
@@ -265,17 +283,31 @@ async function sendPending() {
     error(failure.message);
   } finally {
     await sync(); busy = false; render(); locks();
-    if (!$('local-handoff').hidden) $('handoff-heading').focus(); else $('local-turn-heading').focus();
+    if (!$('local-handoff').hidden) $('handoff-heading').focus(); else if (state.turn.phase === 'Finished') $('local-finish-heading').focus(); else $('local-turn-heading').focus();
   }
 }
 async function submit(type, payload = {}) {
-  if (pending || busy || !online || acknowledgedSeatId !== actorId) return;
+  if (state?.turn.phase === 'Finished' || pending || busy || !online || acknowledgedSeatId !== actorId) return;
   pending = { actorId, command: { id: crypto.randomUUID(), expectedRevision: state.revision, type, payload } }; save();
   await sendPending();
 }
 $('local-actor').addEventListener('change', (event) => selectActor(event.target.value));
 $('confirm-handoff').addEventListener('click', () => { if (!online || busy || pending) return; acknowledgedSeatId = actorId; render(); $('local-turn-heading').focus(); });
 $('skip-local-motion').addEventListener('click', () => boardView?.skipMotion());
+$('celebrate-local').addEventListener('click', () => {
+  $('local-winner').classList.add('celebrating');
+  $('local-celebration-message').hidden = false;
+  $('celebrate-local').hidden = true;
+  $('stop-local-celebration').textContent = 'Dừng chúc mừng';
+  $('stop-local-celebration').focus();
+});
+$('stop-local-celebration').addEventListener('click', () => {
+  $('local-winner').classList.remove('celebrating');
+  $('local-celebration-message').hidden = true;
+  $('celebrate-local').hidden = true;
+  $('stop-local-celebration').hidden = true;
+  $('local-finish-heading').focus();
+});
 $('retry-command').addEventListener('click', sendPending);
 $('local-setup-form').addEventListener('submit', async (event) => {
   event.preventDefault(); if (busy) return; busy = true; locks(); error();

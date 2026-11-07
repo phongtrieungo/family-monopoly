@@ -13,7 +13,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | [ST-203](#st-203--turn-and-landing) | S3 · Turn and landing | Done | ST-202 | B-13 · focused acceptance passed; [PR #15](https://github.com/phongtrieungo/family-monopoly/pull/15) |
 | [ST-204](#st-204--cards-payments-and-auctions) | S4 · Cards, payments and auctions | Done | ST-203 | B-14 · focused and full browser acceptance passed; [implementation story](../../_bmad-output/implementation-artifacts/2-204-cards-payments-and-auctions.md) |
 | [ST-205](#st-205--manage-trade-and-recover) | S5 · Manage, trade and recover | Done | ST-204 | B-15 · focused and full local browser acceptance passed; UI tests and build passed |
-| [ST-206](#st-206--finish-and-family-acceptance) | S6 · Finish and family acceptance | Proposed | ST-205 | Not started |
+| [ST-206](#st-206--finish-and-family-acceptance) | S6 · Finish and family acceptance | Done | ST-205 | B-16 · finish UI and focused 2/4-seat acceptance/review pass; B-09 family gate open |
 
 **Completed slice:** ST-201 is B-11 and ST-202 is B-12. The owner manually validated ST-202 on 2026-11-06 and directed that the failing automated handoff check be bypassed. B-09 human review and wider-playtest decisions remain open; they do not imply approval of a new illustration, rule, deployment or distribution.
 
@@ -129,7 +129,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 
 ## ST-206 · Finish and family acceptance
 
-**Status:** Proposed · **Epic slice:** S6 · **Depends on:** ST-205.
+**Status:** In progress · **Backlog:** B-16 · **Epic slice:** S6 · **Depends on:** ST-205.
 
 **User story:** As a family, we can finish a game, understand the winner and choose whether to start another game.
 
@@ -165,3 +165,9 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | 2026-11-06 | ST-204 | In progress → Done | Focused and full Chrome acceptance, 68 tests, web build, review fixes, matrix coverage and diff checks passed. Review findings were patched or disproved and recorded in the implementation spec. B-09 gates remain separate. |
 | 2026-11-07 | ST-205 | Proposed → In progress | Owner selected the ST-205 implementation spec as B-15 after ST-204; presentation changes only, with engine and rule contracts preserved. |
 | 2026-11-07 | ST-205 | In progress → Done | Focused ST-205 and full local Chrome acceptance passed at desktop and 360px touch widths, including debt retry/recovery, mortgaged trade review/back/acceptance, acquisition charges, jail, development, shortage liquidation and handoffs. 68 Bun tests and web build passed. B-09 review gates remain separate. |
+
+| 2026-11-07 | ST-206 | Proposed → In progress | Owner requested the next story after ST-205; selected as B-16. Implementation spec drafted; Build approval checkpoint pending. |
+
+| 2026-11-07 | ST-206 | In progress → In progress | B-16 implementation and automated acceptance complete; review pending. Chrome 156.0.8078.81 passes 2/4-seat 1440px keyboard and 360px touch/reduced-motion saved-checkpoint journeys, mortgage-delayed victory, summary, refresh, optional celebration/skip and retention. Full local and synthetic browser regressions, 69 tests and web build pass. [Evidence and remaining family gate](../local-play.md#st-206--b-16-finish-acceptance--2026-11-07). No human approval inferred. |
+| 2026-11-07 | ST-204 | Done → Done | Reconciled the stale sprint tracker `review` value to `done` against the existing 2026-11-06 Done record and implementation story evidence; no new closure or behavior change. |
+| 2026-11-07 | ST-206 | In progress → Done | B-16 finish presentation, focused acceptance and review fixes passed. Real family observations and B-09 human gates remain open. |

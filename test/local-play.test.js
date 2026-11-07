@@ -92,3 +92,28 @@ test('AC-37: full-match public asset controls distinguish lawful construction, s
   expect(choices.find(({ space }) => space.id === 'VN-S03').canBuild).toBe(true);
   expect(choices.find(({ space }) => space.id === 'VN-S06').canMortgage).toBe(false);
 });
+
+test('AC-23, AC-37: final acquisition resolves through HTTP, terminal commands preserve the accepted result', async () => {
+  const { local, store, request } = fixture();
+  const { sessions, snapshot } = local.createLocal(['An', 'Bình'], crypto.randomUUID());
+  const records = store.read(); const room = records.find(({ id }) => id === snapshot.roomId);
+  const [debtor, creditor] = sessions.map(({ seatId }) => seatId);
+  room.turn.phase = 'AwaitDebt'; room.turn.seats[0].cash = 0;
+  room.turn.ownership = { 'VN-S14': debtor }; room.turn.mortgages = { 'VN-S14': true };
+  room.turn.pendingDebt = { kind: 'payment', from: debtor, to: creditor, amount: 10 };
+  store.write(records);
+  const bankruptcy = await request('/api/local/command', { id: 'final-bankruptcy', expectedRevision: room.revision, type: 'Bankrupt', payload: {} }, sessions[0].session);
+  expect(bankruptcy.status).toBe(200);
+  const pending = (await request('/api/local/sync?since=0', undefined, sessions[1].session)).body.snapshot;
+  expect(pending.status).toBe('InMatch'); expect(pending.turn.phase).toBe('AwaitAcquisition'); expect(pending.turn.winnerSeatId).toBeUndefined();
+  const choice = { id: 'final-acquisition', expectedRevision: pending.revision, type: 'ChooseMortgage', payload: { choice: 'keep' } };
+  const accepted = await request('/api/local/command', choice, sessions[1].session); expect(accepted.status).toBe(200);
+  const finished = (await request('/api/local/sync?since=0', undefined, sessions[1].session)).body;
+  expect(finished.snapshot.status).toBe('Finished'); expect(finished.snapshot.turn.winnerSeatId).toBe(creditor);
+  expect(finished.snapshot.turn.seats[1].cash).toBe(1191); expect(finished.snapshot.turn.ownership['VN-S14']).toBe(creditor);
+  expect(await request('/api/local/command', choice, sessions[1].session)).toEqual(accepted);
+  const before = store.read();
+  const rejected = await request('/api/local/command', { id: 'terminal-roll', expectedRevision: finished.snapshot.revision, type: 'Roll', payload: {} }, sessions[1].session);
+  expect(rejected.status).toBe(400); expect(store.read()).toEqual(before);
+  expect((await request('/api/local/sync?since=0', undefined, sessions[1].session)).body).toEqual(finished);
+});

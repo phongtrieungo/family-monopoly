@@ -98,3 +98,11 @@ a { color: #215a4c; }
 .local-outcome h3 { margin-top: 0; }
 .local-outcome ol { padding-left: 1.25rem; margin-bottom: 0; }
 .local-outcome li + li { margin-top: .6rem; }
+
+/* Original CSS celebration: presentation only; the complete result is always readable. */
+.local-finish { border: 2px solid #287e78; border-radius: 16px; padding: 1rem; background: #f4f8e9; }
+.local-finish li { margin-block: .75rem; overflow-wrap: anywhere; }
+.local-finish button { min-height: 44px; margin-block: .25rem; }
+.local-finish.celebrating { animation: family-celebration 1.4s ease-in-out infinite alternate; }
+@keyframes family-celebration { to { box-shadow: 0 0 0 8px #e4bf6355; } }
+@media (prefers-reduced-motion: reduce) { .local-finish.celebrating { animation: none; border-color: #b68422; box-shadow: 0 0 0 4px #e4bf6355; } }

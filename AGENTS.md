@@ -31,3 +31,9 @@ Specification-first family property-trading game with a shared-browser full-matc
 - Treat `.codex/hooks.json` output as the runtime evidence of which model handled a request. The routing policy above guides selection but is not proof that a model ran.
 - Give delegated tasks a short, descriptive task name so `subagent:<agent-type>` usage lines remain attributable.
 - Report token counts only when the runtime supplies them; `tokens=unavailable` means unknown, not zero.
+
+## Story workflow with hooks
+
+- Project hooks are enabled by the owner. At story start, read `.codex/hooks.json` and `.codex/README.md`; use available runtime hook output for model-routing and usage evidence. Do not rerun the hook with fabricated events or infer usage when output is absent.
+- Carry the scope, ambiguity and impact classification into planning and any implementation/review handoffs. Give independent delegated work a descriptive task name and an appropriate model tier.
+- At handoff, report available hook evidence alongside verification results; if the runtime did not supply model or token evidence, state that it is unavailable. Enabling hooks does not replace specification, review or acceptance gates.
