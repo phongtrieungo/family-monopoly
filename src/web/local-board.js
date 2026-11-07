@@ -4,12 +4,25 @@ import Phaser from 'phaser';
 const colors = ['0xd7684d', '0x287e78', '0x7a68ad', '0xd29b27'];
 const groups = [0xc9ac6d, 0x77aeb7, 0xb88caa, 0xb79b86, 0x83a46e, 0xd18b62, 0x6d9fb2, 0x88a876];
 const short = (value, max = 11) => value.length > max ? `${value.slice(0, max - 1)}…` : value;
+const diceFaces = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
+
+function drawDie(graphics, value) {
+  graphics.clear();
+  graphics.fillStyle(0x173733, 0.22); graphics.fillEllipse(5, 25, 42, 12);
+  graphics.fillStyle(0x9bb3a3); graphics.fillPoints([{ x: 18, y: -18 }, { x: 25, y: -23 }, { x: 25, y: 13 }, { x: 18, y: 18 }], true);
+  graphics.fillStyle(0xcbd9c5); graphics.fillPoints([{ x: -18, y: 18 }, { x: 18, y: 18 }, { x: 25, y: 13 }, { x: -11, y: 13 }], true);
+  graphics.fillStyle(0xfffdf4); graphics.fillRoundedRect(-18, -18, 36, 36, 6);
+  graphics.lineStyle(2, 0x28594c); graphics.strokeRoundedRect(-18, -18, 36, 36, 6);
+  graphics.fillStyle(0x28594c);
+  for (const pip of diceFaces[value]) graphics.fillCircle((pip % 3 - 1) * 10, (Math.floor(pip / 3) - 1) * 10, 2.5);
+}
 
 export function createBoardView(parent) {
   let scene;
   let tween;
   let movingToken;
   let motionTarget;
+  let rollingDice = [];
   let motionChanged = () => {};
   let pendingRender;
   let api;
@@ -31,6 +44,7 @@ export function createBoardView(parent) {
     if (!tween) return;
     tween.stop(); tween = undefined;
     movingToken?.setPosition(motionTarget.x, motionTarget.y);
+    rollingDice.forEach(({ container, face, value, x }) => { drawDie(face, value); container.setPosition(x, 382).setAngle(0).setScale(1); }); rollingDice = [];
     movingToken = undefined; motionTarget = undefined; parent.dataset.animating = 'false'; motionChanged(false);
   }
   function onReducedMotion(event) { if (event.matches) finishMotion(); }
@@ -46,6 +60,7 @@ export function createBoardView(parent) {
       if (tween && parent.dataset.revision === String(state.revision)) return;
       finishMotion(); motionChanged = onMotionChange; motionChanged(false);
       scene.children.removeAll(true);
+      rollingDice = [];
       const graphics = scene.add.graphics();
       graphics.fillStyle(0xe4eddd); graphics.fillRect(0, 0, 770, 770);
       const turn = state.turn;
@@ -105,9 +120,12 @@ export function createBoardView(parent) {
       }).setOrigin(.5);
       if (finished) scene.add.text(385, 382, 'Cảm ơn cả nhà đã cùng chơi!', { fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: '#24483f' }).setOrigin(.5);
       else if (roll?.dice?.length === 2) {
-        scene.add.text(385, 382, `XÚC XẮC   ${roll.dice[0]}  +  ${roll.dice[1]}`, {
-          fontFamily: 'system-ui, sans-serif', fontSize: '20px', color: '#24483f', fontStyle: 'bold',
-        }).setOrigin(.5);
+        rollingDice = roll.dice.map((value, index) => {
+          const face = scene.add.graphics();
+          drawDie(face, value);
+          const x = 355 + index * 60;
+          return { container: scene.add.container(x, 382, [face]), face, value, x };
+        });
       } else scene.add.text(385, 382, 'Chờ lượt gieo xúc xắc', { fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#46605a' }).setOrigin(.5);
       scene.add.text(385, 420, 'Đọc đủ thông tin trong danh sách 40 ô bên dưới.', { fontFamily: 'system-ui, sans-serif', fontSize: '12px', color: '#46605a' }).setOrigin(.5);
       parent.dataset.renderer = game.renderer.type === Phaser.WEBGL ? 'webgl' : 'canvas';
@@ -115,12 +133,13 @@ export function createBoardView(parent) {
       parent.dataset.animating = 'false';
       parent.dataset.centerText = centerText;
 
-      if (!motion || reducedMotion.matches || motion.fromPosition === motion.toPosition) return;
+      if (!motion || reducedMotion.matches) return;
       movingToken = tokens.get(motion.seatId);
       if (!movingToken) return;
       motionTarget = tokenPoint(motion.toPosition, motion.seatId);
-      const points = [spaceCenter(motion.fromPosition)];
-      if (motion.forcedJail) points.push(spaceCenter(motion.toPosition));
+      const points = [motion.fromPosition === motion.toPosition ? motionTarget : spaceCenter(motion.fromPosition)];
+      if (motion.fromPosition === motion.toPosition) points.push(motionTarget);
+      else if (motion.forcedJail) points.push(spaceCenter(motion.toPosition));
       else {
         let position = motion.fromPosition;
         const steps = motion.dice.reduce((sum, die) => sum + die, 0);
@@ -131,15 +150,25 @@ export function createBoardView(parent) {
       }
       points.push(motionTarget);
       movingToken.setPosition(points[0].x, points[0].y);
+      rollingDice.forEach(({ container, x }, index) => container.setPosition(x + (index ? 75 : -75), 382));
       tween = scene.tweens.addCounter({
         from: 0, to: points.length - 1, duration: Math.min(1800, Math.max(500, (points.length - 1) * 120)), ease: 'Linear',
         onUpdate: (current) => {
           const progress = current.getValue(); const segment = Math.min(Math.floor(progress), points.length - 2);
           const fraction = Math.min(1, progress - segment); const start = points[segment]; const end = points[segment + 1];
           movingToken.setPosition(start.x + (end.x - start.x) * fraction, start.y + (end.y - start.y) * fraction);
+          const t = progress / (points.length - 1);
+          rollingDice.forEach(({ container, face, value, x }, index) => {
+            const arc = Math.sin(Math.PI * t);
+            drawDie(face, t >= 0.8 ? value : (Math.floor(t * 16 + index * 3) % 6) + 1);
+            container.setPosition(x + (index ? 1 : -1) * (1 - t) * 75, 382 - Math.abs(Math.sin(t * Math.PI * 3)) * 30 * (1 - t));
+            container.setAngle((index ? -1 : 1) * 720 * Math.max(0, 1 - t / 0.8));
+            container.setScale(1 + 0.22 * arc);
+          });
         },
         onComplete: () => {
           movingToken?.setPosition(motionTarget.x, motionTarget.y);
+          rollingDice.forEach(({ container, face, value, x }) => { drawDie(face, value); container.setPosition(x, 382).setAngle(0).setScale(1); }); rollingDice = [];
           tween = undefined; movingToken = undefined; motionTarget = undefined; parent.dataset.animating = 'false'; motionChanged(false);
         },
       });

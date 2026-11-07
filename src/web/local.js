@@ -257,7 +257,7 @@ async function syncNow() {
             lastRoll = { seatId: rolled.seatId, dice: rolled.dice, fromPosition: previous.position,
               toPosition: current.position, forcedJail,
               startAward: row.events.find((event) => event.type === 'StartAwarded' && event.seatId === rolled.seatId)?.amount };
-            if (previous.position !== current.position && (forcedJail || expected === current.position) &&
+            if ((previous.position === current.position || forcedJail || expected === current.position) &&
                 !matchMedia('(prefers-reduced-motion: reduce)').matches) motion = lastRoll;
           }
         } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;

@@ -142,6 +142,15 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
       actions.replaceChildren(act('Mortgage', `Thế chấp · nhận ${money(p)}`, { spaceId: space.id }, item.canMortgage));
       if (turn.mortgages[space.id]) actions.append(act('ReleaseMortgage', `Giải chấp · trả ${money(release)}`, { spaceId: space.id }, normal && actor.cash >= release));
       if (space.type === 'street') {
+        let reason = '';
+        if (!normal) reason = 'Chờ hoàn tất quyết định hiện tại trước khi xây.';
+        else if (item.group.some((entry) => turn.ownership[entry.id] !== actorId)) reason = `Cần sở hữu cả nhóm: ${item.group.map((entry) => title(entry.id)).join(', ')}.`;
+        else if (item.group.some((entry) => turn.mortgages[entry.id])) reason = 'Cần giải chấp tất cả ô trong nhóm trước khi xây.';
+        else if (level >= 5) reason = 'Ô này đã có khách sạn.';
+        else if (level > Math.min(...item.group.map((entry) => turn.buildings[entry.id] ?? 0))) reason = 'Cần xây đều: hãy xây các ô còn ít công trình trong nhóm trước.';
+        else if (!turn.stock[level === 4 ? 'hotels' : 'houses']) reason = 'Ngân hàng đã hết công trình loại này.';
+        else if (actor.cash < (turn.stock[level === 4 ? 'hotels' : 'houses'] === 1 ? 10 : buildCost)) reason = 'Không đủ tiền để xây hoặc tham gia quyết định công trình cuối.';
+        if (reason) actions.append(node('p', reason, 'local-note'));
         actions.append(act('Build', `Xây ${level === 4 ? 'khách sạn' : 'nhà'} · ${money(buildCost)}`, { spaceId: space.id }, normal && item.canBuild && actor.cash >= (turn.stock[level === 4 ? 'hotels' : 'houses'] === 1 ? 10 : buildCost)), act('SellBuilding', `Bán một công trình · nhận ${money(buildCost / 2)}`, { spaceId: space.id }, item.canSell));
       }
     };
