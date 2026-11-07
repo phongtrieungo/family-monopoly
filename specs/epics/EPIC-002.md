@@ -32,7 +32,7 @@ Canvas content needs equivalent HTML: a keyboard-operable space list with occupa
 
 ## Proposed implementation slices
 
-The [story knowledge base](EPIC-002-stories.md) records detailed scope, dependencies, acceptance evidence and current status for ST-201–ST-206. ST-204 is selected as B-14 and complete; remaining slices have no B-series backlog IDs yet. Select only the next slice for an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
+The [story knowledge base](EPIC-002-stories.md) records detailed scope, dependencies, acceptance evidence and current status for ST-201–ST-206. ST-204 is B-14 and complete; ST-205 is B-15 and complete; ST-206 is authorized as B-16. Automated implementation acceptance and B-09 human approval are recorded separately. Select only the next slice for an authorized backlog item before implementation. Every slice must leave the local game playable and preserve existing scenario IDs.
 
 | Slice | Player story and scope | Acceptance evidence |
 | --- | --- | --- |
@@ -59,3 +59,8 @@ Use project-authored or explicitly cleared visuals, typefaces, icons, effects an
 ## Open product decisions
 
 The first slice should produce a concrete art-direction sample for owner review. Preferred illustration style, music/sound, age range for usability sessions and level of visual detail remain open. B-09's fluent-reader, branding/distribution, physical-device, accessibility, balance, retention and abandonment reviews continue independently; this epic must not claim those approvals without evidence.
+
+
+## B-16 implementation evidence
+
+ST-206's finish presentation and automated acceptance are complete, awaiting code review. [The local acceptance record](../local-play.md#st-206--b-16-finish-acceptance--2026-11-07) records 2/4-seat desktop keyboard and 360px touch journeys, authoritative summaries, acquired-mortgage obligations before victory, optional celebration/skip, refresh, retries and unchanged server retention. Full local and synthetic private-room browser regressions, 69 tests and the web build pass. These seeded internal journeys do not close the B-09 family-observation or other human review gates; the epic remains In progress.

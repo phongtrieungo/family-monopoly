@@ -41,7 +41,9 @@ Feature: Share one browser between local players
     When jail, debt, acquisition, building demand or a trade requires a choice
     Then the shared screen identifies the responsible seat and offers the relevant controls
     And property management shows costs and consequences before submission
-    And eliminating the last rival displays the server's winner
+    And eliminating the last rival displays the server's winner only after mandatory acquired-mortgage choices resolve
+    And a finished match offers no gameplay commands
+    And the final summary lists each seat's accepted cash, properties and bankruptcy status without ranking
 
   @AC-38
   Scenario: Keyboard and phone-width input share the local-play workflow
@@ -51,3 +53,8 @@ Feature: Share one browser between local players
     And accepted dice and the final destination match the server snapshot
     And the space list identifies each occupied space and the active player's location
     And losing sync preserves the last view and disables submissions until recovery
+    And the finish heading, board and announcement identify the recorded winner without active-turn labels
+    And celebration is optional and skippable with a static reduced-motion equivalent
+    And refresh and repeated sync retain the summary without automatically replaying celebration or stealing focus
+    And canceling unfinished replacement preserves the local session
+    And confirmed replacement or leaving a finished game clears only this browser's local session keys

@@ -49,6 +49,7 @@ export function createBoardView(parent) {
       const graphics = scene.add.graphics();
       graphics.fillStyle(0xe4eddd); graphics.fillRect(0, 0, 770, 770);
       const turn = state.turn;
+      const finished = state.status === 'Finished' && turn.phase === 'Finished';
       const layout = board.spaces.map((_, index) => index <= 10 ? [10, 10-index] : index <= 20 ? [20-index, 0] : index <= 30 ? [0, index-20] : [index-30, 10]);
       const tilePoint = (position) => {
         const [row, col] = layout[position];
@@ -64,7 +65,7 @@ export function createBoardView(parent) {
 
       for (const [index, space] of board.spaces.entries()) {
         const point = tilePoint(index); const x = point.x; const y = point.y;
-        const active = turn.seats.find((seat) => seat.id === activeSeatId)?.position === index;
+        const active = !finished && turn.seats.find((seat) => seat.id === activeSeatId)?.position === index;
         graphics.fillStyle(active ? 0xffe8bd : 0xfffdf7);
         graphics.fillRoundedRect(x, y, 64, 64, 8);
         graphics.lineStyle(active ? 3 : 1, active ? 0x9a5a22 : 0xc5d4c2);
@@ -97,10 +98,13 @@ export function createBoardView(parent) {
       graphics.fillStyle(0xd3e6d1); graphics.fillRoundedRect(82, 82, 606, 606, 28);
       const active = turn.seats.find(({ id }) => id === activeSeatId);
       scene.add.text(385, 305, 'PHỐ NHÀ MÌNH', { fontFamily: 'system-ui, sans-serif', fontSize: '27px', color: '#28594c', fontStyle: 'bold' }).setOrigin(.5);
-      scene.add.text(385, 340, `Đến lượt: ${person(activeSeatId)}  ·  ${active ? active.cash.toLocaleString('vi-VN') : 0} xu`, {
+      const centerText = finished ? `Ván đã kết thúc · ${person(turn.winnerSeatId)} thắng!` : `Đến lượt: ${person(activeSeatId)}  ·  ${active ? active.cash.toLocaleString('vi-VN') : 0} xu`;
+      scene.add.text(385, 340, centerText, {
         fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#355c4d',
+        wordWrap: { width: 500, useAdvancedWrap: true }, align: 'center',
       }).setOrigin(.5);
-      if (roll?.dice?.length === 2) {
+      if (finished) scene.add.text(385, 382, 'Cảm ơn cả nhà đã cùng chơi!', { fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: '#24483f' }).setOrigin(.5);
+      else if (roll?.dice?.length === 2) {
         scene.add.text(385, 382, `XÚC XẮC   ${roll.dice[0]}  +  ${roll.dice[1]}`, {
           fontFamily: 'system-ui, sans-serif', fontSize: '20px', color: '#24483f', fontStyle: 'bold',
         }).setOrigin(.5);
@@ -109,6 +113,7 @@ export function createBoardView(parent) {
       parent.dataset.renderer = game.renderer.type === Phaser.WEBGL ? 'webgl' : 'canvas';
       parent.dataset.revision = state.revision;
       parent.dataset.animating = 'false';
+      parent.dataset.centerText = centerText;
 
       if (!motion || reducedMotion.matches || motion.fromPosition === motion.toPosition) return;
       movingToken = tokens.get(motion.seatId);
