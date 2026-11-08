@@ -8,6 +8,7 @@ The repository carries [Apache-2.0](../../LICENSE). Record third-party permissio
 | IP-02 | Rulebooks, cards and board scans | Candidate edition sources, SRC-01 and SRC-03 | Evidence leads only. Track permission before any reproduction. |
 | IP-03 | Vietnam visuals, fonts, audio and tokens | Sources pending | Use project-authored or individually cleared assets. |
 | IP-04 | Prototype names, synthetic board and copy | Project-authored with Codex in B-02 and B-05 | See the file review below. Public branding review remains open. |
+| IP-05 | EPIC-005/ST-501 presentation research and original mock | Reference-only SRC-08–11; original SVG/CSS/JS art authored for this project on 2026-11-08 | No third-party artwork/font/audio imported. Original mock remains internal and has owner UI approval dated 2026-11-08; B-09 gates remain open. |
 
 Each imported asset needs a path, author/rightsholder, source, license or permission evidence, modification record, attribution, approved distribution scope and reviewer. Keep required notices with the material. Review public branding and distribution separately from internal prototype access.
 
@@ -25,6 +26,10 @@ Codex reviewed the tracked prototype files on 2026-11-06. The owner selected ori
 | ST-202 Phaser renderer | `src/web/local-board.js`, generated `src/web/build/local-board.js` | Board geometry, color palette and renderer code are project-authored; labels and state come from the existing authored content and authoritative snapshot. Phaser 3.90.0 and its eventemitter3 dependency are MIT; retain the reviewed notices under `spikes/st-201/licenses/`. Internal prototype only. |
 | C1009 rulebook | External SRC-01 PDF linked in the edition review | Research evidence. No reproduction permission recorded. |
 | Full-match board, deed values and decks | `specs/research/content-profile.md`, `src/domain/vn-original-content.js` | Authored by Codex on 2026-11-06 after owner authorization for original economy and cards. Reviewed against the board counts and effect definitions for internal implementation. Balance, fluent-reader and distribution review remain open. |
+
+## ST-501 original visual proposal provenance
+
+ST-501 adds `design/game-ui/index.html`, `style.css` and `mock.js` as an isolated visual proposal. Codex authored its projected floor, shops, awnings, trees, pond, fountain, four token silhouettes, paper materials and synthesized short sound. System fonts only. The geometry was not traced from commercial reference imagery. Vietnamese names, stable space IDs and deed schedules reference project-authored `src/domain/vn-original-content.js`; mock player balances and decisions are labeled illustrations. Internal source inspection confirms no imported art/font/audio or external runtime assets. This provenance record does not grant family, fluent-reader, accessibility, branding or distribution approval. Owner UI approval was recorded on 2026-11-08; other B-09 gates remain open.
 
 ## ST-201 renderer spike provenance and review
 
