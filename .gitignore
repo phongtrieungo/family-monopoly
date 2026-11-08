@@ -1,2 +1,5 @@
 /node_modules/
 /src/web/build/
+/.codex/usage/
+/.codex/hooks/__pycache__/
+/.codex/hooks/tests/__pycache__/

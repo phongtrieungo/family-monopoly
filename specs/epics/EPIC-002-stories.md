@@ -4,6 +4,8 @@
 
 ## Status and sequence
 
+**Epic status:** Completed on 2026-11-08 at the owner's direction. All six stories are Done. The retrospective remains optional; B-09 human review gates remain open independently.
+
 Status values: **Proposed** = scoped, awaiting selection as an authorized backlog slice; **Ready** = explicitly selected and prerequisites met; **In progress** = active; **Done** = exit criteria met with evidence and review recorded; **Blocked** = a specific dependency or decision prevents work. Update the table and the affected story's record together when status changes. A PR alone does not close unresolved evidence gates.
 
 | Story | Epic slice | Status | Depends on | Evidence / PR |
@@ -129,7 +131,7 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 
 ## ST-206 · Finish and family acceptance
 
-**Status:** In progress · **Backlog:** B-16 · **Epic slice:** S6 · **Depends on:** ST-205.
+**Status:** Done · **Backlog:** B-16 · **Epic slice:** S6 · **Depends on:** ST-205.
 
 **User story:** As a family, we can finish a game, understand the winner and choose whether to start another game.
 
@@ -171,3 +173,4 @@ Status values: **Proposed** = scoped, awaiting selection as an authorized backlo
 | 2026-11-07 | ST-206 | In progress → In progress | B-16 implementation and automated acceptance complete; review pending. Chrome 156.0.8078.81 passes 2/4-seat 1440px keyboard and 360px touch/reduced-motion saved-checkpoint journeys, mortgage-delayed victory, summary, refresh, optional celebration/skip and retention. Full local and synthetic browser regressions, 69 tests and web build pass. [Evidence and remaining family gate](../local-play.md#st-206--b-16-finish-acceptance--2026-11-07). No human approval inferred. |
 | 2026-11-07 | ST-204 | Done → Done | Reconciled the stale sprint tracker `review` value to `done` against the existing 2026-11-06 Done record and implementation story evidence; no new closure or behavior change. |
 | 2026-11-07 | ST-206 | In progress → Done | B-16 finish presentation, focused acceptance and review fixes passed. Real family observations and B-09 human gates remain open. |
+| 2026-11-08 | EPIC-002 | In progress → Done | Owner directed epic completion after all six stories were Done. Reconciled stale ST-206 detail and backlog wording with the existing completion evidence. Optional retrospective and B-09 human review gates remain open; deferred epics are not authorized. |

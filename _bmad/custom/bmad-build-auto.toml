@@ -1,0 +1,63 @@
+# Team overrides; installed skill files remain update-managed.
+[workflow]
+persistent_facts = [
+  "file:{project-root}/_bmad/custom/delegation-context.md",
+  "file:{project-root}/_bmad/custom/story-session.md",
+  "file:{project-root}/_bmad/custom/verification-evidence.md",
+  "file:{project-root}/_bmad/custom/review-risk.md",
+]
+on_complete = "Follow the completion handoff instructions in {project-root}/_bmad/custom/story-session.md."
+implementation_handoff = """
+Launch a subagent with explicit fork_turns="none", with this prompt:
+
+> Read {spec_file} fully and implement it — the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start.
+>
+> Run focused checks for the changed behavior; the parent owns the required full verification in step 03. Honor any checks the spec explicitly assigns to you. Record inspectable results and the tested state in its Verification Evidence section outside the intent contract, following the repository verification policy. Report what changed, the evidence location, and anything incomplete or risky.
+"""
+
+[[workflow.review_layers]]
+id = "blind-hunter"
+name = "Correctness Reviewer"
+instruction = '''
+Launch an independent subagent with explicit fork_turns="none" with this prompt:
+
+Read `{project-root}/_bmad/custom/correctness-review.md` and follow it.
+Review content: the unified diff at `{diff_file}`.
+Return your findings to the parent; do not invoke skills or spawn agents.
+'''
+
+[[workflow.review_layers]]
+id = "edge-case-hunter"
+name = "Edge Case Hunter"
+instruction = '''
+Before dispatch: Run when review_risk is high, risk is unknown, or the user explicitly requests this lens. Otherwise announce this layer is skipped and do not launch a reviewer.
+
+Launch a subagent with explicit fork_turns="none" with this prompt:
+
+Read `{skill-root}/review-prompts/edge-case-hunter.md` completely and follow it as your review instructions.
+
+claims_file (leave unread until your instructions call for it): {claims_file}
+
+Review content: the unified diff at `{diff_file}`. Read that file — it is the content under review.
+
+Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. If the instruction file is unreadable, report that exact failure and stop. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.
+
+'''
+when = "Run when review_risk is high, risk is unknown, or the user explicitly requests this lens."
+
+[[workflow.review_layers]]
+id = "verification-gap"
+name = "Verification Gap Reviewer"
+instruction = '''
+Before dispatch: Run when review_risk is medium or high, risk is unknown, or the user explicitly requests this lens. Otherwise announce this layer is skipped and do not launch a reviewer.
+
+Launch a subagent with explicit fork_turns="none" with this prompt:
+
+Read `{skill-root}/review-prompts/verification-gap.md` completely and follow it as your review instructions.
+
+Review content: the unified diff at `{diff_file}`. Read that file — it is the content under review.
+
+Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. If the instruction file is unreadable, report that exact failure and stop. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.
+
+'''
+when = "Run when review_risk is medium or high, risk is unknown, or the user explicitly requests this lens."

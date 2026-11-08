@@ -1,0 +1,504 @@
+$ python3 -m unittest discover -s .codex/hooks/tests -v
+test_aliases (test_usage_ledger.LedgerTests.test_aliases) ... ok
+test_cli_labels_and_no_invalid_label_writes (test_usage_ledger.LedgerTests.test_cli_labels_and_no_invalid_label_writes) ... ok
+test_concurrent_same_response (test_usage_ledger.LedgerTests.test_concurrent_same_response) ... ok
+test_corrupt_rows_and_unreadable_report_are_errors (test_usage_ledger.LedgerTests.test_corrupt_rows_and_unreadable_report_are_errors) ... ok
+test_diagnostic_adapter_without_live_main (test_usage_ledger.LedgerTests.test_diagnostic_adapter_without_live_main) ... ok
+test_duplicate_conflicting_input_derives_from_retained_counts (test_usage_ledger.LedgerTests.test_duplicate_conflicting_input_derives_from_retained_counts) ... ok
+test_duplicate_explicit_total_preserves_runtime_provenance (test_usage_ledger.LedgerTests.test_duplicate_explicit_total_preserves_runtime_provenance) ... ok
+test_exact_grouping_keys_counts_and_attribution (test_usage_ledger.LedgerTests.test_exact_grouping_keys_counts_and_attribution) ... ok
+test_label_phase_update_retains_story (test_usage_ledger.LedgerTests.test_label_phase_update_retains_story) ... ok
+test_u01_allowlist_and_provenance (test_usage_ledger.LedgerTests.test_u01_allowlist_and_provenance) ... ok
+test_u02_partial_null_and_no_double_count (test_usage_ledger.LedgerTests.test_u02_partial_null_and_no_double_count) ... ok
+test_u03_duplicate_enrichment (test_usage_ledger.LedgerTests.test_u03_duplicate_enrichment) ... ok
+test_u04_identical_identityless_observations (test_usage_ledger.LedgerTests.test_u04_identical_identityless_observations) ... ok
+test_u05_concurrent_process_writers_missing_ids (test_usage_ledger.LedgerTests.test_u05_concurrent_process_writers_missing_ids) ... ok
+test_u06_scope_snapshot_runtime_precedence (test_usage_ledger.LedgerTests.test_u06_scope_snapshot_runtime_precedence) ... ok
+test_u07_absent_and_empty_read_only (test_usage_ledger.LedgerTests.test_u07_absent_and_empty_read_only) ... ok
+test_u07_reports_groups_missing_status_and_session (test_usage_ledger.LedgerTests.test_u07_reports_groups_missing_status_and_session) ... ok
+test_u08_bad_input_and_storage_errors (test_usage_ledger.LedgerTests.test_u08_bad_input_and_storage_errors) ... ok
+test_unknown_roles_stored_reported_and_enriched (test_usage_ledger.LedgerTests.test_unknown_roles_stored_reported_and_enriched) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.592s
+
+OK
+exit=0
+
+$ /usr/bin/python3 -m unittest discover -s .codex/hooks/tests -v
+test_aliases (test_usage_ledger.LedgerTests) ... ok
+test_cli_labels_and_no_invalid_label_writes (test_usage_ledger.LedgerTests) ... ok
+test_concurrent_same_response (test_usage_ledger.LedgerTests) ... ok
+test_corrupt_rows_and_unreadable_report_are_errors (test_usage_ledger.LedgerTests) ... ok
+test_diagnostic_adapter_without_live_main (test_usage_ledger.LedgerTests) ... ok
+test_duplicate_conflicting_input_derives_from_retained_counts (test_usage_ledger.LedgerTests) ... ok
+test_duplicate_explicit_total_preserves_runtime_provenance (test_usage_ledger.LedgerTests) ... ok
+test_exact_grouping_keys_counts_and_attribution (test_usage_ledger.LedgerTests) ... ok
+test_label_phase_update_retains_story (test_usage_ledger.LedgerTests) ... ok
+test_u01_allowlist_and_provenance (test_usage_ledger.LedgerTests) ... ok
+test_u02_partial_null_and_no_double_count (test_usage_ledger.LedgerTests) ... ok
+test_u03_duplicate_enrichment (test_usage_ledger.LedgerTests) ... ok
+test_u04_identical_identityless_observations (test_usage_ledger.LedgerTests) ... ok
+test_u05_concurrent_process_writers_missing_ids (test_usage_ledger.LedgerTests) ... ok
+test_u06_scope_snapshot_runtime_precedence (test_usage_ledger.LedgerTests) ... ok
+test_u07_absent_and_empty_read_only (test_usage_ledger.LedgerTests) ... ok
+test_u07_reports_groups_missing_status_and_session (test_usage_ledger.LedgerTests) ... ok
+test_u08_bad_input_and_storage_errors (test_usage_ledger.LedgerTests) ... ok
+test_unknown_roles_stored_reported_and_enriched (test_usage_ledger.LedgerTests) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.592s
+
+OK
+exit=0
+
+$ /usr/bin/python3 .codex/hooks/usage_report.py report
+{
+  "state": "recorded_observations",
+  "groups": [
+    {
+      "group": "gpt-6-luna",
+      "observations": 1,
+      "known_subtotal": {
+        "input": 213067,
+        "cached": 9088,
+        "output": 3808,
+        "reasoning": 2779,
+        "total": 216875
+      },
+      "missing_fields": {
+        "input": 0,
+        "cached": 0,
+        "output": 0,
+        "reasoning": 0,
+        "total": 0
+      },
+      "unidentifiable_observations": 1,
+      "status_counts": {
+        "completed": 1
+      },
+      "role_counts": {
+        "root": 1
+      },
+      "attribution_sources": {
+        "runtime_hook": 1
+      }
+    },
+    {
+      "group": "gpt-6.1-sol",
+      "observations": 59,
+      "known_subtotal": {
+        "input": 6238719,
+        "cached": 6128256,
+        "output": 21530,
+        "reasoning": 5574,
+        "total": 6260249
+      },
+      "missing_fields": {
+        "input": 1,
+        "cached": 1,
+        "output": 1,
+        "reasoning": 1,
+        "total": 1
+      },
+      "unidentifiable_observations": 59,
+      "status_counts": {
+        "completed": 58,
+        "failed": 1
+      },
+      "role_counts": {
+        "root": 25,
+        "subagent:default": 34
+      },
+      "attribution_sources": {
+        "runtime_hook": 59
+      }
+    }
+  ],
+  "note": "Known subtotals only; missing fields and unidentified observations prevent exact cost/attempt claims. Cached is included in input; reasoning is included in output. No billing rates applied."
+}
+exit=0
+
+$ git diff --check
+
+exit=0
+
+$ git check-ignore .codex/usage/ledger.sqlite3 .codex/usage/ledger.sqlite3-journal .codex/usage/ledger.sqlite3-wal .codex/usage/ledger.sqlite3-shm
+.codex/usage/ledger.sqlite3
+.codex/usage/ledger.sqlite3-journal
+.codex/usage/ledger.sqlite3-wal
+.codex/usage/ledger.sqlite3-shm
+exit=0
+
+$ git diff --name-only -- specs src tests
+
+exit=0
+
+Markdown link inspection: PASS
+AGENTS.md: exists .codex/README.md
+AGENTS.md: exists _bmad/custom/delegation-context.md
+AGENTS.md: exists _bmad/custom/story-session.md
+AGENTS.md: exists _bmad/custom/verification-evidence.md
+AGENTS.md: exists _bmad/custom/review-risk.md
+.codex/README.md: exists hooks.json
+Traceability: U01-U08 covered; high-risk review lenses completed; game/scenario code unchanged.
+
+Live read-only report state: recorded_observations; groups=2; known usage only; no billing estimate.
+
+Verification input digest: HEAD bb71ee6dabbae03626758cec45fa34b15dcfc564 + SHA-256 3378f4c6d601d3e19aae1fd3cba039c436d9d49f7f48c0d1a71e48d9463cd54e.
+Digest algorithm: sorted git ls-files -co --exclude-standard paths; SHA-256 over UTF-8 path + NUL + file bytes + NUL.
+Excluded evidence/status-only files: ["_bmad-output/implementation-artifacts/opt-05-verification.log", "_bmad-output/implementation-artifacts/spec-optimization-05-usage-ledger.md"]
+Python PATH: 3.15.2
+Registered hook interpreter: Python 3.9.6
+Verification input manifest:
+.agents/skills/bmad-advanced-elicitation/SKILL.md
+.agents/skills/bmad-advanced-elicitation/assets/methods.csv
+.agents/skills/bmad-advanced-elicitation/customize.toml
+.agents/skills/bmad-advanced-elicitation/scripts/pick_methods.py
+.agents/skills/bmad-advanced-elicitation/scripts/tests/test_pick_methods.py
+.agents/skills/bmad-agent-analyst/SKILL.md
+.agents/skills/bmad-agent-analyst/customize.toml
+.agents/skills/bmad-agent-architect/SKILL.md
+.agents/skills/bmad-agent-architect/customize.toml
+.agents/skills/bmad-agent-dev/SKILL.md
+.agents/skills/bmad-agent-dev/customize.toml
+.agents/skills/bmad-agent-pm/SKILL.md
+.agents/skills/bmad-agent-pm/customize.toml
+.agents/skills/bmad-agent-ux-designer/SKILL.md
+.agents/skills/bmad-agent-ux-designer/customize.toml
+.agents/skills/bmad-architecture/SKILL.md
+.agents/skills/bmad-architecture/assets/spine-template.md
+.agents/skills/bmad-architecture/customize.toml
+.agents/skills/bmad-architecture/references/headless.md
+.agents/skills/bmad-architecture/references/reviewer-gate.md
+.agents/skills/bmad-architecture/scripts/lint_spine.py
+.agents/skills/bmad-architecture/scripts/tests/test_lint_spine.py
+.agents/skills/bmad-brainstorming/SKILL.md
+.agents/skills/bmad-brainstorming/assets/brain-icons.json
+.agents/skills/bmad-brainstorming/assets/brain-methods.csv
+.agents/skills/bmad-brainstorming/assets/brain-selector.html
+.agents/skills/bmad-brainstorming/customize.toml
+.agents/skills/bmad-brainstorming/references/converge.md
+.agents/skills/bmad-brainstorming/references/finalize.md
+.agents/skills/bmad-brainstorming/references/headless.md
+.agents/skills/bmad-brainstorming/references/in-chat-techniques.md
+.agents/skills/bmad-brainstorming/references/mode-autonomous.md
+.agents/skills/bmad-brainstorming/references/mode-facilitator.md
+.agents/skills/bmad-brainstorming/references/mode-partner.md
+.agents/skills/bmad-brainstorming/references/resume.md
+.agents/skills/bmad-brainstorming/scripts/brain.py
+.agents/skills/bmad-brainstorming/scripts/tests/test_brain.py
+.agents/skills/bmad-build-auto/SKILL.md
+.agents/skills/bmad-build-auto/compile-epic-context.md
+.agents/skills/bmad-build-auto/customize.toml
+.agents/skills/bmad-build-auto/references/claims-check.md
+.agents/skills/bmad-build-auto/references/deletion-check.md
+.agents/skills/bmad-build-auto/review-prompts/edge-case-hunter.md
+.agents/skills/bmad-build-auto/review-prompts/verification-gap.md
+.agents/skills/bmad-build-auto/spec-template.md
+.agents/skills/bmad-build-auto/step-01-clarify-and-route.md
+.agents/skills/bmad-build-auto/step-02-plan.md
+.agents/skills/bmad-build-auto/step-03-implement.md
+.agents/skills/bmad-build-auto/step-04-review.md
+.agents/skills/bmad-build-auto/workflow.md
+.agents/skills/bmad-build/SKILL.md
+.agents/skills/bmad-build/compile-epic-context.md
+.agents/skills/bmad-build/customize.toml
+.agents/skills/bmad-build/references/claims-check.md
+.agents/skills/bmad-build/references/deletion-check.md
+.agents/skills/bmad-build/review-prompts/edge-case-hunter.md
+.agents/skills/bmad-build/review-prompts/verification-gap.md
+.agents/skills/bmad-build/spec-template.md
+.agents/skills/bmad-build/step-01-clarify-and-route.md
+.agents/skills/bmad-build/step-02-plan.md
+.agents/skills/bmad-build/step-03-implement.md
+.agents/skills/bmad-build/step-04-review.md
+.agents/skills/bmad-build/step-05-present.md
+.agents/skills/bmad-build/step-oneshot.md
+.agents/skills/bmad-build/sync-sprint-status.md
+.agents/skills/bmad-build/workflow.md
+.agents/skills/bmad-code-review/SKILL.md
+.agents/skills/bmad-code-review/customize.toml
+.agents/skills/bmad-code-review/references/claims-check.md
+.agents/skills/bmad-code-review/references/deletion-check.md
+.agents/skills/bmad-code-review/review-prompts/edge-case-hunter.md
+.agents/skills/bmad-code-review/review-prompts/verification-gap.md
+.agents/skills/bmad-code-review/steps/step-01-gather-context.md
+.agents/skills/bmad-code-review/steps/step-02-review.md
+.agents/skills/bmad-code-review/steps/step-03-triage.md
+.agents/skills/bmad-code-review/steps/step-04-present.md
+.agents/skills/bmad-correct-course/SKILL.md
+.agents/skills/bmad-correct-course/checklist.md
+.agents/skills/bmad-correct-course/customize.toml
+.agents/skills/bmad-create-epics-and-stories/SKILL.md
+.agents/skills/bmad-create-epics-and-stories/customize.toml
+.agents/skills/bmad-create-epics-and-stories/steps/step-01-validate-prerequisites.md
+.agents/skills/bmad-create-epics-and-stories/steps/step-02-design-epics.md
+.agents/skills/bmad-create-epics-and-stories/steps/step-03-create-stories.md
+.agents/skills/bmad-create-epics-and-stories/steps/step-04-final-validation.md
+.agents/skills/bmad-create-epics-and-stories/templates/epics-template.md
+.agents/skills/bmad-customize/SKILL.md
+.agents/skills/bmad-customize/scripts/list_customizable_skills.py
+.agents/skills/bmad-customize/scripts/tests/test_list_customizable_skills.py
+.agents/skills/bmad-deep-recon/SKILL.md
+.agents/skills/bmad-deep-recon/assets/research.template.md
+.agents/skills/bmad-deep-recon/customize.toml
+.agents/skills/bmad-deep-recon/references/draft.md
+.agents/skills/bmad-deep-recon/references/finalize.md
+.agents/skills/bmad-deep-recon/references/html-briefing.md
+.agents/skills/bmad-deep-recon/references/lifecycle.md
+.agents/skills/bmad-deep-recon/references/process.md
+.agents/skills/bmad-deep-recon/references/run.md
+.agents/skills/bmad-deep-recon/references/selection.md
+.agents/skills/bmad-deep-recon/references/synthesis.md
+.agents/skills/bmad-deep-recon/references/verification.md
+.agents/skills/bmad-deep-recon/scripts/recon_kit.py
+.agents/skills/bmad-deep-recon/scripts/tests/test_recon_kit.py
+.agents/skills/bmad-deep-recon/types/academic-lit.md
+.agents/skills/bmad-deep-recon/types/competitive.md
+.agents/skills/bmad-deep-recon/types/domain.md
+.agents/skills/bmad-deep-recon/types/market.md
+.agents/skills/bmad-deep-recon/types/technical.md
+.agents/skills/bmad-deep-recon/types/user-voice.md
+.agents/skills/bmad-forge-idea/SKILL.md
+.agents/skills/bmad-forge-idea/customize.toml
+.agents/skills/bmad-forge-idea/scripts/resolve_personas.py
+.agents/skills/bmad-forge-idea/scripts/tests/test_resolve_personas.py
+.agents/skills/bmad-help/SKILL.md
+.agents/skills/bmad-party-mode/SKILL.md
+.agents/skills/bmad-party-mode/customize.toml
+.agents/skills/bmad-party-mode/references/create-party.md
+.agents/skills/bmad-party-mode/references/mode-agent-team.md
+.agents/skills/bmad-party-mode/references/mode-auto.md
+.agents/skills/bmad-party-mode/references/mode-subagent.md
+.agents/skills/bmad-party-mode/references/party-memory.md
+.agents/skills/bmad-party-mode/scripts/resolve_party.py
+.agents/skills/bmad-party-mode/scripts/tests/test_resolve_party.py
+.agents/skills/bmad-prd/SKILL.md
+.agents/skills/bmad-prd/assets/headless-schemas.md
+.agents/skills/bmad-prd/assets/prd-template.md
+.agents/skills/bmad-prd/assets/prd-validation-checklist.md
+.agents/skills/bmad-prd/assets/validation-report-template.html
+.agents/skills/bmad-prd/customize.toml
+.agents/skills/bmad-prd/references/headless.md
+.agents/skills/bmad-prd/references/validate.md
+.agents/skills/bmad-prfaq/SKILL.md
+.agents/skills/bmad-prfaq/agents/artifact-analyzer.md
+.agents/skills/bmad-prfaq/agents/web-researcher.md
+.agents/skills/bmad-prfaq/assets/prfaq-template.md
+.agents/skills/bmad-prfaq/bmad-manifest.json
+.agents/skills/bmad-prfaq/customize.toml
+.agents/skills/bmad-prfaq/references/customer-faq.md
+.agents/skills/bmad-prfaq/references/internal-faq.md
+.agents/skills/bmad-prfaq/references/press-release.md
+.agents/skills/bmad-prfaq/references/verdict.md
+.agents/skills/bmad-product-brief/SKILL.md
+.agents/skills/bmad-product-brief/assets/brief-template.md
+.agents/skills/bmad-product-brief/customize.toml
+.agents/skills/bmad-project-context/SKILL.md
+.agents/skills/bmad-project-context/customize.toml
+.agents/skills/bmad-project-context/references/best-practices.md
+.agents/skills/bmad-project-context/references/template.md
+.agents/skills/bmad-qa-generate-e2e-tests/SKILL.md
+.agents/skills/bmad-qa-generate-e2e-tests/checklist.md
+.agents/skills/bmad-qa-generate-e2e-tests/customize.toml
+.agents/skills/bmad-retrospective/SKILL.md
+.agents/skills/bmad-retrospective/customize.toml
+.agents/skills/bmad-retrospective/references/acceptance-verdict.md
+.agents/skills/bmad-retrospective/references/aggregate-views.md
+.agents/skills/bmad-retrospective/references/evidence-gathering.md
+.agents/skills/bmad-retrospective/references/retro-document.md
+.agents/skills/bmad-retrospective/references/team-discussion.md
+.agents/skills/bmad-retrospective/scripts/git_evidence.py
+.agents/skills/bmad-retrospective/scripts/sprint_status.py
+.agents/skills/bmad-retrospective/scripts/tests/fixtures/sprint-status-template.yaml
+.agents/skills/bmad-retrospective/scripts/tests/test_git_evidence.py
+.agents/skills/bmad-retrospective/scripts/tests/test_sprint_status.py
+.agents/skills/bmad-review/SKILL.md
+.agents/skills/bmad-review/customize.toml
+.agents/skills/bmad-review/references/editorial-common.md
+.agents/skills/bmad-review/references/lens-adversarial.md
+.agents/skills/bmad-review/references/lens-edge-case-hunter.md
+.agents/skills/bmad-review/references/lens-prose.md
+.agents/skills/bmad-review/references/lens-structure.md
+.agents/skills/bmad-review/references/lens-verification-gap.md
+.agents/skills/bmad-review/references/structure-models.md
+.agents/skills/bmad-review/scripts/tests/test_word_metrics.py
+.agents/skills/bmad-review/scripts/word_metrics.py
+.agents/skills/bmad-spec/SKILL.md
+.agents/skills/bmad-spec/assets/headless-schemas.md
+.agents/skills/bmad-spec/assets/spec-template.md
+.agents/skills/bmad-spec/assets/stories-schema.md
+.agents/skills/bmad-spec/customize.toml
+.agents/skills/bmad-sprint-planning/SKILL.md
+.agents/skills/bmad-sprint-planning/customize.toml
+.agents/skills/bmad-sprint-planning/references/fix-sprint-status.md
+.agents/skills/bmad-sprint-planning/references/generate-tracking.md
+.agents/skills/bmad-sprint-planning/references/readiness-gate.md
+.agents/skills/bmad-sprint-planning/references/status-view.md
+.agents/skills/bmad-sprint-planning/references/validate.md
+.agents/skills/bmad-sprint-planning/scripts/sprint_plan.py
+.agents/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py
+.agents/skills/bmad-sprint-planning/sprint-status-template.yaml
+.agents/skills/bmad-ux/SKILL.md
+.agents/skills/bmad-ux/assets/color-themes.md
+.agents/skills/bmad-ux/assets/design-directions.md
+.agents/skills/bmad-ux/assets/design-example-editorial.md
+.agents/skills/bmad-ux/assets/design-example-mobile.md
+.agents/skills/bmad-ux/assets/design-example-shadcn.md
+.agents/skills/bmad-ux/assets/excalidraw-wireframe.md
+.agents/skills/bmad-ux/assets/experience-example-mobile.md
+.agents/skills/bmad-ux/assets/experience-example-shadcn.md
+.agents/skills/bmad-ux/assets/headless-schemas.md
+.agents/skills/bmad-ux/assets/key-screens.md
+.agents/skills/bmad-ux/assets/validation-report-template.html
+.agents/skills/bmad-ux/customize.toml
+.agents/skills/bmad-ux/references/creative-tools.md
+.agents/skills/bmad-ux/references/design-md-spec.md
+.agents/skills/bmad-ux/references/headless.md
+.agents/skills/bmad-ux/references/validate.md
+.agents/skills/bmad-walkthrough/SKILL.md
+.agents/skills/bmad-walkthrough/customize.toml
+.agents/skills/bmad-walkthrough/generate-trail.md
+.agents/skills/bmad-walkthrough/step-01-orientation.md
+.agents/skills/bmad-walkthrough/step-02-walkthrough.md
+.agents/skills/bmad-walkthrough/step-03-detail-pass.md
+.agents/skills/bmad-walkthrough/step-04-testing.md
+.agents/skills/bmad-walkthrough/step-05-wrapup.md
+.codex/README.md
+.codex/hooks.json
+.codex/hooks/model_usage.py
+.codex/hooks/tests/test_usage_ledger.py
+.codex/hooks/usage_ledger.py
+.codex/hooks/usage_report.py
+.gitignore
+AGENTS.md
+LICENSE
+README.md
+_bmad-output/implementation-artifacts/2-204-cards-payments-and-auctions.md
+_bmad-output/implementation-artifacts/deferred-work.md
+_bmad-output/implementation-artifacts/epic-2-context.md
+_bmad-output/implementation-artifacts/spec-dice-tumble.md
+_bmad-output/implementation-artifacts/spec-st-204-cards-payments-and-auctions-2.md
+_bmad-output/implementation-artifacts/spec-st-204-cards-payments-and-auctions.md
+_bmad-output/implementation-artifacts/spec-st-205-manage-trade-recover.md
+_bmad-output/implementation-artifacts/spec-st-206-finish-family-acceptance.md
+_bmad-output/implementation-artifacts/spec-table-dice.md
+_bmad-output/implementation-artifacts/sprint-status.yaml
+_bmad-output/planning-artifacts/architecture/architecture-family-monopoly-2026-11-07/.memlog.md
+_bmad-output/planning-artifacts/architecture/architecture-family-monopoly-2026-11-07/ARCHITECTURE-SPINE.md
+_bmad-output/planning-artifacts/architecture/architecture-family-monopoly-2026-11-07/reviews/review-adversary.md
+_bmad-output/planning-artifacts/architecture/architecture-family-monopoly-2026-11-07/reviews/review-rubric.md
+_bmad-output/planning-artifacts/architecture/architecture-family-monopoly-2026-11-07/reviews/review-technology.md
+_bmad-output/specs/spec-family-monopoly/.memlog.md
+_bmad-output/specs/spec-family-monopoly/SPEC.md
+_bmad/_config/bmad-help.csv
+_bmad/_config/files-manifest.csv
+_bmad/_config/manifest.yaml
+_bmad/_config/skill-manifest.csv
+_bmad/bmm/config.yaml
+_bmad/bmm/module-help.csv
+_bmad/bmm/v6-shims/README.md
+_bmad/config.toml
+_bmad/config.user.toml
+_bmad/core/config.yaml
+_bmad/core/module-help.csv
+_bmad/core/v6-shims/README.md
+_bmad/custom/.gitignore
+_bmad/custom/bmad-architecture.toml
+_bmad/custom/bmad-build-auto.toml
+_bmad/custom/bmad-build.toml
+_bmad/custom/bmad-code-review.toml
+_bmad/custom/config.toml
+_bmad/custom/correctness-review.md
+_bmad/custom/delegation-context.md
+_bmad/custom/review-risk.md
+_bmad/custom/story-session.md
+_bmad/custom/verification-evidence.md
+_bmad/render/.gitignore
+_bmad/scripts/config_utils.py
+_bmad/scripts/memlog.py
+_bmad/scripts/render_skill.py
+_bmad/scripts/resolve_config.py
+_bmad/scripts/resolve_customization.py
+bun.lock
+package.json
+scripts/local-play-acceptance.js
+scripts/prototype-acceptance.js
+specs/GAME-SPEC-001.md
+specs/adr/ADR-007-renderer-proposal.md
+specs/adr/README.md
+specs/backlog.md
+specs/board-theme.md
+specs/epics/EPIC-002-stories.md
+specs/epics/EPIC-002.md
+specs/epics/EPIC-003.md
+specs/epics/EPIC-004.md
+specs/epics/ST-201-comparison.md
+specs/features/README.md
+specs/features/full-match.feature
+specs/features/interface.feature
+specs/features/local-play.feature
+specs/features/recovery.feature
+specs/features/renderer-spike.feature
+specs/features/rooms.feature
+specs/features/turn.feature
+specs/full-match-implementation.md
+specs/local-play.md
+specs/playtest-review.md
+specs/prototype-acceptance.md
+specs/research/content-profile.md
+specs/research/edition-review.md
+specs/research/licensing.md
+specs/research/sources.md
+specs/rooms.md
+specs/rules.md
+specs/turn-state.md
+specs/ui-ux.md
+spikes/st-201/.gitignore
+spikes/st-201/README.md
+spikes/st-201/bun.lock
+spikes/st-201/evidence/desktop-canvas.png
+spikes/st-201/evidence/desktop-webgl.png
+spikes/st-201/evidence/movement.webm
+spikes/st-201/evidence/phone-canvas.png
+spikes/st-201/licenses/eventemitter3-MIT.txt
+spikes/st-201/licenses/phaser-MIT.txt
+spikes/st-201/licenses/react-MIT.txt
+spikes/st-201/licenses/react-dom-MIT.txt
+spikes/st-201/licenses/scheduler-MIT.txt
+spikes/st-201/package.json
+spikes/st-201/public/index.html
+spikes/st-201/public/style.css
+spikes/st-201/server.js
+spikes/st-201/src/index.js
+spikes/st-201/verify.js
+src/domain/board.js
+src/domain/property-turn.js
+src/domain/setup.js
+src/domain/synthetic-board.js
+src/domain/vn-original-content.js
+src/domain/vn-original-policies.js
+src/domain/vn-original-turn.js
+src/rooms/file-store.js
+src/rooms/service.js
+src/web/app.js
+src/web/index.html
+src/web/local-board.js
+src/web/local-controls.js
+src/web/local-vi.js
+src/web/local.html
+src/web/local.js
+src/web/server.js
+src/web/style.css
+src/web/vi.js
+test/auction.test.js
+test/fixtures/property-turn.js
+test/local-play.test.js
+test/property-turn-fixture.test.js
+test/property-turn.test.js
+test/rooms.test.js
+test/vn-original-content.test.js
+test/vn-original-policies.test.js
+test/vn-original-rooms.test.js
+test/vn-original-turn.test.js
