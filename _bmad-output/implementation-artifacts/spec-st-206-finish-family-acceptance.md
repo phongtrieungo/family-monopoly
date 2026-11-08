@@ -65,7 +65,7 @@ baseline_commit: '00aadf96228a86e43f32bab7d88b55d418e4120a'
 - Celebration is original CSS, opt-in and immediately stoppable/skippable, with a static reduced-motion equivalent. It never submits commands or affects accepted state. Exact saved-command retry remains available when needed.
 - Added `--st-206` for 2/4 seats × desktop keyboard/360px touch with saved checkpoints, production routes, sanitized revision/event evidence and four captures. Stabilized browser setup navigation, native confirmation responses, foreground touch gestures and bounded CDP requests. Supplementary replacement setup explicitly uses keyboard; primary touch journeys use native synthesized touch gestures.
 - Added HTTP coverage for final bankruptcy/acquisition, identical terminal receipt retry and rejected terminal commands; retained existing AC-23 reducer coverage.
-- Updated B-16 traceability and preserved IDs; reconciled ST-204's stale sprint tracker to its recorded Done evidence. Implementation is ready for review; B-09 human gates remain open.
+- Updated B-16 traceability and preserved IDs; reconciled ST-204's stale sprint tracker to its recorded Done evidence. Implementation, acceptance and review fixes are complete as recorded below; B-09 human gates remain open.
 
 ## Spec Change Log
 

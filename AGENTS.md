@@ -31,9 +31,26 @@ Specification-first family property-trading game with a shared-browser full-matc
 - Treat `.codex/hooks.json` output as the runtime evidence of which model handled a request. The routing policy above guides selection but is not proof that a model ran.
 - Give delegated tasks a short, descriptive task name so `subagent:<agent-type>` usage lines remain attributable.
 - Report token counts only when the runtime supplies them; `tokens=unavailable` means unknown, not zero.
+- Use the durable local ledger and report/label commands in [.codex/README.md](.codex/README.md) for usage attribution. Labels are manual session/turn attribution for subsequent observations; they never establish runtime model or usage evidence. Keep missing counts and response identity uncertainty visible, and never treat absent records as zero cost.
 
 ## Story workflow with hooks
 
 - Project hooks are enabled by the owner. At story start, read `.codex/hooks.json` and `.codex/README.md`; use available runtime hook output for model-routing and usage evidence. Do not rerun the hook with fabricated events or infer usage when output is absent.
 - Carry the scope, ambiguity and impact classification into planning and any implementation/review handoffs. Give independent delegated work a descriptive task name and an appropriate model tier.
 - At handoff, report available hook evidence alongside verification results; if the runtime did not supply model or token evidence, state that it is unavailable. Enabling hooks does not replace specification, review or acceptance gates.
+
+## Delegation context
+
+- For independent implementation, discovery, and review agents, explicitly set `fork_turns="none"` in the launch arguments. Never rely on a "context-free" prompt or the runtime default. Follow the [delegation policy](_bmad/custom/delegation-context.md) when preparing a handoff.
+
+## Story session boundaries
+
+- Use a fresh root session per authorized story or unrelated task by default. At a story boundary or an interruption, provide the compact [session handoff](_bmad/custom/story-session.md); the user or external runner opens the fresh session. Do not claim that a handoff clears the current context, and do not interrupt an active story merely to reset context. Honor an explicit request to continue in the current session.
+
+## Verification evidence
+
+- Follow the [verification policy](_bmad/custom/verification-evidence.md): assign full-suite ownership, record results against the tested state, and inspect evidence before duplicating a run. Explicit workflow/spec executions, post-patch reruns, and acceptance gates still apply.
+
+## Review effort
+
+- Classify the complete diff using the [review policy](_bmad/custom/review-risk.md) before dispatch. Use all correctness, edge-case, and verification layers for high or uncertain risk. Reviews may report no findings; never invent issues to meet a quota.

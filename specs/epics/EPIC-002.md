@@ -1,6 +1,6 @@
 # EPIC-002 · A delightful family game on one shared screen
 
-**Status:** In progress, revised after owner feedback on 2026-11-06. Local play is the highest priority. Implement one approved backlog slice at a time. The wider-playtest gate in [B-09](../playtest-review.md) remains open.
+**Status:** Completed on 2026-11-08 at the owner's direction. ST-201–ST-206 are Done with implementation, review and acceptance evidence recorded in the [story knowledge base](EPIC-002-stories.md). The wider-playtest gate in [B-09](../playtest-review.md) remains open; epic completion does not authorize hosting, distribution or the deferred epics. The retrospective remains optional and has not been run.
 
 ## Outcome
 
@@ -63,4 +63,4 @@ The first slice should produce a concrete art-direction sample for owner review.
 
 ## B-16 implementation evidence
 
-ST-206's finish presentation and automated acceptance are complete, awaiting code review. [The local acceptance record](../local-play.md#st-206--b-16-finish-acceptance--2026-11-07) records 2/4-seat desktop keyboard and 360px touch journeys, authoritative summaries, acquired-mortgage obligations before victory, optional celebration/skip, refresh, retries and unchanged server retention. Full local and synthetic private-room browser regressions, 69 tests and the web build pass. These seeded internal journeys do not close the B-09 family-observation or other human review gates; the epic remains In progress.
+ST-206's finish presentation, automated acceptance and review fixes are complete. [The local acceptance record](../local-play.md#st-206--b-16-finish-acceptance--2026-11-07) records 2/4-seat desktop keyboard and 360px touch journeys, authoritative summaries, acquired-mortgage obligations before victory, optional celebration/skip, refresh, retries and unchanged server retention. Full local and synthetic private-room browser regressions, 69 tests and the web build passed in the recorded implementation evidence. These seeded internal journeys do not close the B-09 family-observation or other human review gates. The owner directed completion of EPIC-002 on 2026-11-08; the sprint tracker and story records reflect that decision.
