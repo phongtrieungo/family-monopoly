@@ -1,0 +1,61 @@
+ST-501 verification — 2026-11-08
+Working directory: /Users/ngotrieuphong/Projects/ai-repos/family-monopoly
+
+$ node --check design/game-ui/mock.js
+
+exit=0
+
+$ node design/game-ui/verify-mock.cjs
+PASS: review deep link selects purchase and requested viewport
+PASS: 40 unique authored space IDs and full readable list
+PASS: all eight fixtures produce a distinct readable decision heading
+PASS: HUD turn marker moves to the next player for handoff and rent
+PASS: both trade responses require recipient handoff
+PASS: edited names stay consistent in handoff, rent, trade, debt and victory
+PASS: user-provided names remain escaped in illustrated HTML
+PASS: reduced-motion roll advances directly to selected purchase
+8 checks passed; browser layout and real-device gates remain separate.
+
+exit=0
+
+$ uv run .agents/skills/bmad-sprint-planning/scripts/sprint_plan.py validate --status-file _bmad-output/implementation-artifacts/sprint-status.yaml
+{"ok": true, "action": "validate", "status_file": "/Users/ngotrieuphong/Projects/ai-repos/family-monopoly/_bmad-output/implementation-artifacts/sprint-status.yaml", "valid": true, "problems": [], "legacy_mapped": []}
+
+exit=0
+
+$ git diff --check; git diff --name-only -- src test specs/features; node --version; python3 --version
+v22.22.3
+Python 3.15.2
+
+exit=0
+
+Additional inspected output:
+Local Markdown targets: 57 exist (pre README test paragraph, which adds no links).
+No game-network calls, persistent storage or remote stylesheet dependencies found.
+Unique static HTML IDs, local asset references and all eight fixture selectors verified.
+Local HTTP GET /?scene=purchase&viewport=1280x720 = 200; /mock.js = 200; /style.css = 200.
+
+Browser CUA evidence in this session:
+Desktop table 1440x900; purchase 1280x720 and 1024x768; purchase portrait 768x1024; auction 360x800 before/after explicit bidder handoff. Earlier 1280x720 table/auction/purchase captures exposed collapsed art and clipped choices, which were patched and visually rechecked. Fixed-frame presets are container-layout reviews, not physical device or actual browser-viewport emulation. The review toolbar can require host-page scrolling for taller presets.
+Native 40-space dialog opened; selected Ngõ hoa Hà Nội; rent/build/mortgage rows visible; Tab reached back control; Escape closed and restored available decision-heading focus. Purchase action visibly updated sample HUD and ownership scene. Phone auction kept board/dock visible with internal sheet scrollbar and bid/pass controls.
+No standalone PNG/video files were exported; CUA image outputs and the running reproducible preview are the visual evidence.
+Not run: actual 200% browser zoom, full Tab traversal, OS reduced-motion browser integration, audio playback audit, physical touch devices, screen reader, fluent-reader/family observations. Pure reduced-motion branching is covered by the Node checks. Production suites not run: src/, test/ and feature contracts are unchanged.
+
+Independent reviews:
+Correctness: 3 findings (HUD turn owner, trade reject before handoff, hardcoded edited names); all verified and patched. Recheck: No remaining findings in the three fixes.
+Verification-gap: no filed gap findings; 2 other identity findings duplicate correctness roots, both verified and patched. Recheck: No remaining findings; all 8 stand-in checks pass. Reviewers do not claim browser verification.
+Medium review risk: isolated prototype controls and future UX contracts; authoritative production behavior unchanged. Edge-case layer skipped under project policy.
+Implementation agent stopped at usage limit after writing mock/layout/docs; root completed tracking, manifests, regressions, review fixes and verification. Current-turn runtime model/token hook evidence unavailable; configured routing is not runtime telemetry.
+
+Open gates: owner visual approval before ST-502; unrun manual accessibility/viewport checks above; all B-09 approvals. ST-501 remains in review, not Done. No commit or push.
+
+Final tracking/link inspection:
+uv run .agents/skills/bmad-sprint-planning/scripts/sprint_plan.py validate --status-file _bmad-output/implementation-artifacts/sprint-status.yaml
+{"ok":true,"valid":true,"problems":[],"legacy_mapped":[]}
+exit=0 after review status and shared story-location changes.
+62 local Markdown targets verified; no whitespace/final-newline problems across 17 changed/new files.
+Final tested-state SHA-256: fad4c5ac97aa6f6c2d1d7a4ecfb19686423818962dfdaf28b4a7fe102d5267eb
+Procedure: sorted unique git ls-files -co --exclude-standard -z paths; UTF-8 path + NUL + contents + NUL for every existing file.
+Excluded only: _bmad-output/implementation-artifacts/spec-st-501-game-ui-visual-contract.md and _bmad-output/implementation-artifacts/st-501-verification.log.
+
+Owner delivery update, 2026-11-08: UI explicitly approved; ST-501 Done; PR requested. Earlier pending-approval statements are historical. Approval/status docs and review-toolbar wording updated; executable mock JS/CSS unchanged since eight passing checks and reviewer rechecks. node --check and git diff --check pass; sprint validator reports valid with no problems/legacy statuses. Remaining manual/B-09 checks stay open.

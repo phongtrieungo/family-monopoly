@@ -12,3 +12,14 @@
 | SRC-07 | [Hasbro Consumer Care FAQ 68](https://hasbro-new.custhelp.com/app/answers/detail/a_id/68) | Answer body, scenario and shortage clarification for hotel sales. | Reviewed by Codex on 2026-11-06. Publisher clarification with a three-hotel example. Page updated 2023-12-06. No C1009 edition identifier, so application to the authored profile is explicit. |
 
 Capture source URL or physical reference, edition identifier, locator, access date, reviewer and applicable rule IDs. SRC-03 is a historical lead outside the selected original-content direction. Treat storefront listings or player recollections as leads. Preserve edition discrepancies for review. Keep any authorized inspection copies in an approved location and cite locators in the repository.
+
+## EPIC-005 presentation references
+
+These sources inform presentation only, not rules, content clearance or current feature parity. Text retrieved 2026-11-08; see [ST-501 research distinctions](../design/game-ui/RESEARCH.md). No commercial artwork was imported or traced, and no hands-on game testing is claimed.
+
+| ID | Source | Locator and scope | Status |
+| --- | --- | --- | --- |
+| SRC-08 | [EA, Monopoly Streets announcement](https://news.ea.com/press-releases/press-releases-details/2010/EA-to-Deliver-Dynamic-3D-MONOPOLY-Gameplay-Experience-with-MONOPOLY-Streets/default.aspx) | 2010-05-06; opening and property-development paragraphs; evolving city metaphor. | Historical first-party announcement, reference only. |
+| SRC-09 | [Ubisoft, Monopoly Accessibility Spotlight](https://news.ubisoft.com/it-it/article/6KBIQNPgqtAQWeyvX7UTPI/monopoly-accessibility-spotlight) | 2024-09-18; optional interactions/skip interview and Visuals/Audio lists. | Publisher/designer claims, not independent certification. |
+| SRC-10 | [Marmalade, Monopoly game page](https://www.marmaladegamestudio.com/games/monopoly) | About / Features; advertised shared-device pass-and-play. | Current retrieved marketing; not independently exercised. |
+| SRC-11 | [Caroline Henriksen, Monopoly Front End Redesign](https://www.carolinechenriksen.com/monopoly-front-end-redesign) | April–November 2022 project; Overview, Project Goals, UX Wireframes and UI Mockups. | Credited designer's retrospective; front-end design reference, not gameplay evidence. |

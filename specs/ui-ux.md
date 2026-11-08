@@ -1,5 +1,9 @@
 # UI and UX
 
+## EPIC-005 visual proposal
+
+The owner approved a cohesive illustrated 2.5D Vietnamese neighborhood table direction on 2026-11-08. ST-501 / B-18 produces the [design contract](design/game-ui/DESIGN.md), [experience contract](design/game-ui/EXPERIENCE.md), [cited research](design/game-ui/RESEARCH.md) and [isolated interactive mockup](../design/game-ui/index.html). Owner approved this UI on 2026-11-08; ST-501 is complete, and production migration remains a separate ST-502 slice. The existing behavior below remains the shipped baseline; the mock does not replace it or close B-09 human gates.
+
 | View | Desktop | Mobile |
 | --- | --- | --- |
 | Entry and lobby | Create/join view with invite, seat list and ready controls | Single-column flow with share and copy controls |

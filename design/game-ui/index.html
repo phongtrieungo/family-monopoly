@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Phố Nhà Mình · Đề xuất bàn chơi</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./mock.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#decision-heading">Đến quyết định hiện tại</a>
+  <aside class="review-bar" aria-label="Công cụ duyệt thiết kế · không thuộc trò chơi">
+    <div class="review-label"><span class="review-dot"></span> ST-501 <strong>DUYỆT THIẾT KẾ</strong></div>
+    <label class="review-select">Cảnh mẫu <select id="fixture-select">
+      <option value="table">Bàn chơi</option><option value="purchase">Mua đất</option>
+      <option value="auction">Đấu giá</option><option value="setup">Chuẩn bị</option>
+      <option value="trade">Trao đổi</option><option value="debt">Khoản nợ</option>
+      <option value="victory">Kết thúc</option><option value="recovery">Khôi phục</option>
+    </select></label>
+    <label class="review-select">Khung xem <select id="viewport-select">
+      <option value="fluid">Theo cửa sổ</option><option value="1440x900">1440 × 900</option>
+      <option value="1280x720">1280 × 720</option><option value="1024x768">1024 × 768</option>
+      <option value="768x1024">768 × 1024</option><option value="360x800">360 × 800</option>
+    </select></label>
+    <span class="review-note">Mẫu tương tác nội bộ · hình ảnh đã duyệt</span>
+  </aside>
+  <p id="viewport-note" class="viewport-note" hidden></p>
+  <div id="preview-host">
+    <main id="game" class="game-shell" aria-label="Phố Nhà Mình · bàn chơi minh họa">
+      <header class="game-header">
+        <a href="#" id="brand-link" class="brand" aria-label="Phố Nhà Mình, về cảnh bàn chơi"><span class="brand-roof" aria-hidden="true">⌂</span><span>PHỐ <b>NHÀ MÌNH</b><small>MỘT BÀN CHƠI, CẢ NHÀ CÙNG VUI</small></span></a>
+        <span class="session-chip"><span class="status-dot"></span> Cùng chơi một máy <span class="session-round">· Vòng 06</span></span>
+        <nav class="table-tools" aria-label="Tiện ích bàn chơi">
+          <button id="sound-button" class="icon-button" aria-pressed="false" title="Bật hiệu ứng âm thanh">♪ <span>Âm thanh: tắt</span></button>
+          <button id="history-button" class="icon-button" title="Xem diễn biến">↺ <span>Diễn biến</span></button>
+        </nav>
+      </header>
+      <section id="players" class="players" aria-label="Bốn người quanh bàn"></section>
+      <div class="table-layout">
+        <section class="table-scene" aria-label="Toàn cảnh khu phố">
+          <div class="scene-topline"><span class="scene-caption">KHU PHỐ CỦA CẢ NHÀ</span><span class="bank-note">Ngân hàng <strong>24 nhà · 10 khách sạn</strong></span></div>
+          <div class="board-wrap"><svg id="board" viewBox="0 0 960 690" aria-hidden="true" focusable="false"></svg></div>
+          <div class="scene-bottomline"><span><i class="sun-dot"></i> Chiều êm trong phố</span><button class="text-button" id="spaces-button">Xem đủ 40 ô <span aria-hidden="true">↗</span></button></div>
+          <section class="turn-dock" aria-label="Lượt và người cầm máy">
+            <div class="dock-avatar" aria-hidden="true">✿</div>
+            <div class="dock-copy"><span id="dock-eyebrow" class="eyebrow">LƯỢT CỦA AN · BÔNG HOA</span><strong id="dock-title">Một vòng phố, nhiều điều vui</strong><span id="dock-note">Chuyền máy cho An để bắt đầu lượt.</span></div>
+            <button id="dock-action" class="primary">Tôi là An · nhận máy <span aria-hidden="true">→</span></button>
+          </section>
+        </section>
+        <section id="decision" class="decision" aria-labelledby="decision-heading"></section>
+      </div>
+      <footer class="game-footer"><span>BẢN MINH HỌA NỘI BỘ</span><span>Số xu, lượt và tài sản là dữ liệu mẫu · không phải ván chơi thật</span><span class="footer-signature">Một góc phố, một nhà vui.</span></footer>
+      <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+      <p id="toast" class="toast" role="status" hidden></p>
+      <dialog id="detail-dialog" aria-labelledby="dialog-heading"><div class="dialog-top"><span class="eyebrow">CÙNG NHÌN LẠI</span><button id="close-dialog" class="icon-button" aria-label="Đóng cửa sổ">✕</button></div><div id="dialog-content"></div></dialog>
+    </main>
+  </div>
+  <noscript><p>Bật JavaScript để xem các cảnh minh họa. Không có kết nối máy chủ hay giao dịch thật.</p></noscript>
+</body>
+</html>
