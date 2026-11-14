@@ -51,7 +51,8 @@
             <section id="local-outcome" class="local-outcome" aria-label="Kết quả đã xác nhận" hidden><ol id="local-outcome-items"></ol></section>
             <label id="local-actor-label"><span>Người đang cầm máy</span><select id="local-actor"></select></label>
             <div id="local-handoff" class="handoff"><h3 id="handoff-heading" tabindex="-1"></h3><p>Chuyền máy cho người này trước khi tiếp tục.</p><button id="confirm-handoff"></button></div>
-            <div id="local-retry" class="handoff" hidden><p id="retry-context"></p><button id="retry-command">Gửi lại thao tác đã lưu</button></div>
+            <div id="local-retry" class="handoff" hidden><p id="retry-context" tabindex="-1"></p><button id="retry-command">Gửi lại thao tác đã lưu</button></div>
+            <p id="local-decision-lock" class="local-note" role="status"></p>
             <fieldset id="local-controls" class="local-controls" disabled><legend class="sr-only">Thao tác cho người đang cầm máy</legend><div id="local-actions"></div></fieldset>
             <section id="local-winner" class="local-finish" aria-labelledby="local-finish-heading" hidden>
               <h3 id="local-finish-heading" tabindex="-1"></h3>

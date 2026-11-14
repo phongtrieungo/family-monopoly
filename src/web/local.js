@@ -1,5 +1,5 @@
 import { auctionMinimum, decisionControls, node } from './local-controls.js';
-import { money, cardCopy, phases, errors, pieces, transactionCopy } from './local-vi.js';
+import { money, cardCopy, phases, errors, pieces, transactionCopy, recoveryCopy } from './local-vi.js';
 import { createBoardView } from './local-board.bundle.js';
 const $ = (id) => document.getElementById(id);
 const read = (key) => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
@@ -18,6 +18,7 @@ let errorCode;
 let boardView;
 let previewView;
 let inspectedSpaceId;
+const portfolioSelection = new Map();
 const inspectionOpen = () => Boolean(document.querySelector('.local-page dialog[open]'));
 let renderedFinished = false;
 let lastRoll = game?.lastRoll ?? null;
@@ -52,7 +53,7 @@ function candidates() {
   if (turn.phase === 'BuildingDemand') return turn.buildingDemand.eligibleSeatIds.filter((id) => !Object.hasOwn(turn.buildingDemand.responses, id));
   if (turn.phase === 'BuildingOffer') return [turn.buildingDemand.offeredSeatId];
   if (turn.phase === 'AwaitAcquisition') return [turn.acquisition.seatId];
-  if (turn.phase === 'AwaitDebt') return [...new Set([turn.pendingDebt.from, ...(turn.trade ? [turn.trade.targetSeatId] : [])])].filter((id) => live.includes(id));
+  if (turn.phase === 'AwaitDebt') return [...new Set([turn.pendingDebt.from, turn.trade?.proposerSeatId, turn.trade?.targetSeatId])].filter((id) => live.includes(id));
   return live;
 }
 function preferred() {
@@ -72,6 +73,8 @@ function locks() {
   $('local-connection').hidden = online || !game;
   $('local-controls').hidden = state?.turn.phase === 'Finished';
   $('local-controls').disabled = state?.turn.phase === 'Finished' || busy || !online || !!pending || acknowledgedSeatId !== actorId;
+  $('local-decision-lock').textContent = !state || state.turn.phase === 'Finished' || !online || pending || acknowledgedSeatId !== actorId || !busy
+    ? '' : recoveryCopy.syncing;
   $('local-purchase-actions').disabled = $('local-controls').disabled;
   $('local-actor').disabled = busy || !online || !!pending;
   $('confirm-handoff').disabled = busy || !online || !!pending;
@@ -183,7 +186,13 @@ function renderAuction() {
     : transactionCopy.noBid;
   const facts = [[highBid ? transactionCopy.minimumBid : transactionCopy.openingBid, money(auctionMinimum(auction))]];
   if (actor) facts.push([transactionCopy.bidder, person(actorId)], [transactionCopy.bidderCash, money(actor.cash)]);
-  if (target) facts.push([transactionCopy.buildingTarget, spaceName(target)]);
+  if (target) {
+    facts.push([transactionCopy.buildingTarget, spaceName(target)],
+      [recoveryCopy.stock, `${turn.stock.houses} nhà · ${turn.stock.hotels} khách sạn`]);
+    for (const id of auction.eligibleSeatIds) {
+      if (id !== actorId && auction.targets[id]) facts.push([person(id), spaceName(auction.targets[id])]);
+    }
+  }
   $('local-auction-terms').replaceChildren(...facts.map(([label, value]) => {
     const term = node('div');
     term.append(node('dt', label), node('dd', value));
@@ -254,6 +263,7 @@ function render({ motion } = {}) {
   if (turn.pendingDebt) context = `${person(turn.pendingDebt.from)} cần trả ${money(turn.pendingDebt.amount)} cho ${person(turn.pendingDebt.to)}. ${cardCopy[turn.pendingDebt.sourceId] ?? (turn.pendingDebt.sourceId === 'jail' ? 'Phí ra nhà chờ' : spaceName(turn.pendingDebt.sourceId))}`;
   if (turn.phase === 'Auction') context = '';
   if (turn.phase === 'BuildingDemand') context = 'Công trình cuối được giữ lại. Mọi người được mời cần đăng ký ô hợp lệ hoặc từ chối.';
+  if (turn.phase === 'AwaitAcquisition') context = `${person(turn.acquisition.seatId)} cần chọn cách nhận ${spaceName(turn.acquisition.spaceId)}.`;
   $('local-context').textContent = finished ? 'Ván chơi đã kết thúc. Không còn lượt hoặc quyết định cần thực hiện.' : context;
   $('local-roll-result').textContent = finished ? '' : rollText(lastRoll);
   const chooser = $('local-actor'); chooser.replaceChildren(...allowed.map((id) => { const option = node('option', person(id)); option.value = id; return option; })); chooser.value = actorId;
@@ -272,7 +282,9 @@ function render({ motion } = {}) {
   $('confirm-handoff').textContent = `Tôi là ${person(actorId)} · tiếp tục`;
   const purchaseActions = $('local-purchase-actions');
   purchaseActions.querySelectorAll('button').forEach((button) => button.remove());
-  $('local-actions').replaceChildren(decisionControls({ state, board, actorId, submit, selectActor, inspectSpace, purchaseActions }));
+  const keepPortfolioOpen = actorId === oldActor && $('asset-details')?.open;
+  $('local-actions').replaceChildren(decisionControls({ state, board, actorId, submit, selectActor, inspectSpace, purchaseActions, portfolioSelection }));
+  if (keepPortfolioOpen && $('asset-details')) $('asset-details').open = true;
   purchaseActions.hidden = !purchaseActions.querySelector('button');
   if (turn.phase !== 'Finished' && actorId !== required && allowed.includes(required) && !['Auction', 'BuildingDemand'].includes(turn.phase)) {
     const back = node('button', `Chuyền về ${person(required)} để tiếp tục lượt`); back.type = 'button'; back.addEventListener('click', () => selectActor(required)); $('local-actions').prepend(back);
@@ -438,6 +450,8 @@ async function syncNow({ animate = true } = {}) {
 function sync(options) { syncing ??= syncNow(options).finally(() => { syncing = undefined; }); return syncing; }
 async function sendPending({ retry = false } = {}) {
   if (!pending || busy || !online) return;
+  const origin = document.activeElement;
+  const fromPortfolio = $('asset-details')?.contains(origin);
   if (retry) acknowledgedSeatId = undefined;
   busy = true; locks(); error();
   let accepted = false;
@@ -457,7 +471,12 @@ async function sendPending({ retry = false } = {}) {
     if (retry || accepted || before !== state || errorCode === 'ResyncRequired') render();
     locks();
     if (inspectionOpen()) return;
-    if (!$('local-handoff').hidden) $('handoff-heading').focus(); else if (state.turn.phase === 'Finished') $('local-finish-heading').focus(); else $('local-turn-heading').focus();
+    if (!$('local-handoff').hidden) $('handoff-heading').focus();
+    else if (state.turn.phase === 'Finished') $('local-finish-heading').focus();
+    else if (pending) $('retry-context').focus();
+    else if (!accepted && errorCode === 'ActionRejected' && fromPortfolio && $('asset-details')?.open) $('asset-space').focus();
+    else if (!accepted && errorCode === 'ActionRejected' && origin?.isConnected && !origin.matches(':disabled')) origin.focus();
+    else $('local-turn-heading').focus();
   }
 }
 async function submit(type, payload = {}) {

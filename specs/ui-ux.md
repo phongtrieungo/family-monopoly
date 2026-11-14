@@ -51,3 +51,16 @@ The shared local decision sheet shows published Vietnamese card text alongside t
 | Refresh, retry and native controls | [AC-36 and AC-38](features/local-play.feature) |
 
 Implementation and unrun checks are recorded in the [ST-503 spec](../_bmad-output/implementation-artifacts/spec-5-503-cards-auctions-transaction-feedback.md#verification).
+
+## ST-504 portfolio, trade and recovery
+
+| Local UI surface | Existing acceptance |
+| --- | --- |
+| Selected property, full identity, ownership, group, mortgage and building state, bank stock and action previews | [AC-31–32](features/full-match.feature), [AC-37](features/local-play.feature) |
+| Debt obligation and shortfall, settlement, liquidation proceeds and bankruptcy consequences | [AC-11, AC-19–20, AC-22–23, AC-25–26](features/full-match.feature), [AC-37](features/local-play.feature) |
+| Two directional trade summaries, recipient handoff, cancellation and separate mortgage acquisition choices | [AC-21, AC-23, AC-30](features/full-match.feature), [AC-34, AC-36–37](features/local-play.feature) |
+| Jail attempts, release card and fee, and a failed final attempt routed through debt | [AC-28–29](features/full-match.feature), [AC-37](features/local-play.feature) |
+| Final-building reservation, responses, available targets, building offer and auction | [AC-24, AC-27](features/full-match.feature), [AC-34–35, AC-37](features/local-play.feature) |
+| Rejection, saved command retry, reconnect, focus and responsive native controls | [AC-34, AC-36–38](features/local-play.feature) |
+
+The existing ST-205 browser path in [local-play-acceptance.js](../scripts/local-play-acceptance.js) remains available. ST-504 implementation and pending checks are recorded in the [story spec](../_bmad-output/implementation-artifacts/spec-5-504-portfolio-trade-and-recovery.md#verification).
