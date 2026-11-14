@@ -20,7 +20,7 @@ development_status:
   epic-5: in-progress
   5-501-game-ui-visual-contract-and-mockup-approval: done
   5-502-playable-table-and-core-turn: review
-  5-503-cards-auctions-and-transaction-feedback: backlog
+  5-503-cards-auctions-and-transaction-feedback: review
   5-504-portfolio-trade-and-recovery: backlog
   5-505-finish-and-complete-game-acceptance: backlog
   epic-5-retrospective: optional

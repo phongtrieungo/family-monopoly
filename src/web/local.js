@@ -1,5 +1,5 @@
-import { decisionControls, node } from './local-controls.js';
-import { money, cardCopy, phases, errors, pieces } from './local-vi.js';
+import { auctionMinimum, decisionControls, node } from './local-controls.js';
+import { money, cardCopy, phases, errors, pieces, transactionCopy } from './local-vi.js';
 import { createBoardView } from './local-board.bundle.js';
 const $ = (id) => document.getElementById(id);
 const read = (key) => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
@@ -94,38 +94,101 @@ function balances(ids) {
 function auctionSubject(event) {
   if (event.spaceId) return spaceName(event.spaceId);
   // Building auctions do not carry a property ID in their settlement event.
-  return 'công trình cuối';
+  return transactionCopy.lastBuilding;
 }
-const outcomeTypes = new Set(['PropertyBought', 'StartAwarded', 'CardDrawn', 'RentPaid', 'PaymentSettled', 'BankPaid', 'AuctionStarted', 'AuctionBidAccepted', 'AuctionPassed', 'AuctionSettled', 'AuctionEndedWithoutBid']);
-function renderOutcome() {
-  const row = [...history].reverse().find(({ events }) => events.some(({ type }) => outcomeTypes.has(type)));
-  const events = row?.events.filter(({ type }) => outcomeTypes.has(type)) ?? [];
-  const lastCard = events.findLast(({ type }) => type === 'CardDrawn');
-  const lines = events.map((event) => {
-    const building = event.type === 'AuctionSettled' && row.events.find((entry) => entry.type === 'BuildingBought' && (entry.seatId ?? entry.from) === event.from);
-    let text = describe(building ? { ...event, spaceId: building.spaceId } : event);
-    if (event.type === 'CardDrawn') {
-      const seat = state.turn.seats.find(({ id }) => id === event.seatId);
-      if (seat && event === lastCard) text += ` Hiện tại: ${spaceName(board.spaces[seat.position]?.id)}.`;
-      if (state.turn.retainedCards[event.seatId]?.includes(event.cardId)) text += ' Đang giữ giấy ra nhà chờ.';
-      const debt = state.turn.pendingDebt;
-      if (debt?.sourceId === event.cardId) text += ` Đang chờ ${person(debt.from)} trả ${money(debt.amount)} cho ${person(debt.to)}.`;
-    }
+const payments = new Set(['RentPaid', 'PaymentSettled', 'BankPaid']);
+const auctionResults = new Set(['AuctionSettled', 'AuctionEndedWithoutBid']);
+const outcomeTypes = new Set(['PropertyBought', 'StartAwarded', 'CardDrawn', ...payments, ...auctionResults]);
 
-    if (['RentPaid', 'PaymentSettled'].includes(event.type)) text += ` Số dư hiện tại · ${balances([event.from, event.to])}.`;
-    if (event.type === 'BankPaid') text += ` Số dư hiện tại · ${balances([event.seatId])}.`;
-    if (event.type === 'PropertyBought') text += ` Số dư hiện tại · ${balances([event.from])}.`;
-    if (event.type === 'AuctionSettled') text += ` Số dư hiện tại · ${balances([event.from])}.`;
-    return node('li', text);
-  });
-  const auction = state.turn.auction;
-  if (state.turn.phase === 'Auction' && auction) {
-    const subject = auction.kind === 'building' ? 'công trình cuối' : spaceName(auction.spaceId);
-    const leader = auction.highBid ? `${person(auction.highBid.seatId)} dẫn đầu với ${money(auction.highBid.amount)}.` : 'Chưa có người đặt giá.';
-    lines.push(node('li', `Đấu giá ${subject}. ${leader} Giá đặt tối thiểu ${money((auction.highBid?.amount ?? 9) + 1)}. Chọn người đủ điều kiện và xác nhận chuyền máy. Bỏ lượt là quyết định cuối trong cuộc đấu giá này.`));
+function outcomeItem(event, row) {
+  if (payments.has(event.type)) {
+    const ids = event.type === 'BankPaid' ? [event.seatId] : [event.from, event.to];
+    const item = node('li', '', 'local-feedback local-feedback-payment');
+    item.append(node('h3', transactionCopy.payment), node('p', describe(event)), balanceLine(ids));
+    return item;
+  }
+  if (auctionResults.has(event.type)) {
+    const building = event.type === 'AuctionSettled' && !event.spaceId && row.events.find(
+      (entry) => entry.type === 'BuildingBought' && entry.seatId === event.from,
+    );
+    const result = building ? `${person(event.from)} thắng với ${money(event.amount)} và xây tại ${spaceName(building.spaceId)}.` : describe(event);
+    const item = node('li', '', 'local-feedback local-feedback-auction');
+    item.append(node('h3', transactionCopy.auctionResult), node('p', result));
+    if (event.type === 'AuctionSettled') item.append(balanceLine([event.from]));
+    return item;
+  }
+  const item = node('li', describe(event), 'local-feedback');
+  if (event.type === 'PropertyBought') item.append(balanceLine([event.from]));
+  return item;
+}
+
+function balanceLine(ids) {
+  return node('p', `${transactionCopy.balances} · ${balances(ids)}.`, 'local-feedback-balances');
+}
+
+function cardOutcome(event, row, lastCard) {
+  const item = node('li', '', 'local-feedback local-feedback-card');
+  item.append(node('h3', transactionCopy.drawnCard), node('p', describe(event), 'local-card-copy'));
+  const seat = state.turn.seats.find(({ id }) => id === event.seatId);
+  const movedSince = history.some(({ revision, events }) => revision > row.revision && events.some(
+    (entry) => (entry.type === 'Rolled' || entry.type === 'Jailed') && entry.seatId === event.seatId,
+  ));
+  if (seat && event === lastCard && !movedSince) item.append(node('p', `Hiện tại: ${spaceName(board.spaces[seat.position]?.id)}.`));
+  if (state.turn.retainedCards[event.seatId]?.includes(event.cardId)) item.append(node('p', 'Đang giữ giấy ra nhà chờ.'));
+  const debt = state.turn.pendingDebt;
+  if (debt?.sourceId === event.cardId) item.append(node('p', `Đang chờ ${person(debt.from)} trả ${money(debt.amount)} cho ${person(debt.to)}.`));
+  return item;
+}
+
+function renderOutcome() {
+  const row = history.findLast(({ events }) => events.some(({ type }) => outcomeTypes.has(type)));
+  const newerRoll = row && history.some(({ revision, events }) => revision > row.revision && events.some(({ type }) => type === 'Rolled'));
+  const events = newerRoll ? [] : row?.events ?? [];
+  const lastCard = events.findLast(({ type }) => type === 'CardDrawn');
+  const lines = [];
+  let card;
+  let cardEffects;
+  for (const event of events) {
+    if (event.type === 'CardDrawn') {
+      card = cardOutcome(event, row, lastCard);
+      cardEffects = undefined;
+      lines.push(card);
+    } else if (card && (payments.has(event.type) || event.type === 'StartAwarded' || event.type === 'Jailed')) {
+      if (!cardEffects) {
+        cardEffects = node('ol', '', 'local-card-effects');
+        card.append(cardEffects);
+      }
+      cardEffects.append(outcomeItem(event, row));
+    } else if (outcomeTypes.has(event.type)) {
+      lines.push(outcomeItem(event, row));
+    }
   }
   $('local-outcome').hidden = !lines.length;
   $('local-outcome-items').replaceChildren(...lines);
+}
+
+function renderAuction() {
+  const { turn } = state;
+  const auction = turn.auction;
+  $('local-auction').hidden = turn.phase !== 'Auction' || !auction;
+  if ($('local-auction').hidden) return;
+  const { highBid } = auction;
+  const actor = turn.seats.find(({ id }) => id === actorId);
+  const target = auction.targets?.[actorId];
+  $('local-auction-item').textContent = target
+    ? (turn.buildings[target] === 4 ? transactionCopy.lastHotel : transactionCopy.lastHouse)
+    : auctionSubject(auction);
+  $('local-auction-leader').textContent = highBid
+    ? `${person(highBid.seatId)} dẫn đầu với ${money(highBid.amount)}.`
+    : transactionCopy.noBid;
+  const facts = [[highBid ? transactionCopy.minimumBid : transactionCopy.openingBid, money(auctionMinimum(auction))]];
+  if (actor) facts.push([transactionCopy.bidder, person(actorId)], [transactionCopy.bidderCash, money(actor.cash)]);
+  if (target) facts.push([transactionCopy.buildingTarget, spaceName(target)]);
+  $('local-auction-terms').replaceChildren(...facts.map(([label, value]) => {
+    const term = node('div');
+    term.append(node('dt', label), node('dd', value));
+    return term;
+  }));
 }
 function describe(event) {
   const name = person(event.seatId ?? event.from);
@@ -136,7 +199,7 @@ function describe(event) {
     case 'PropertyBought': return `${name} mua ${spaceName(event.spaceId)} với ${money(event.amount)}.`;
     case 'RentPaid': return `${name} trả ${money(event.amount)} tiền thuê cho ${person(event.to)}. ${cause(event.sourceId)}.`;
     case 'PaymentSettled': return `${name} trả ${money(event.amount)} cho ${person(event.to)}. ${cause(event.sourceId)}.`;
-    case 'CardDrawn': return `${name}: ${cardCopy[event.cardId] ?? 'Rút một thẻ.'}`;
+    case 'CardDrawn': return `${name}: ${cardCopy[event.cardId] ?? transactionCopy.unknownCard}`;
     case 'BankPaid': return `${name} nhận ${money(event.amount)} từ Ngân hàng. ${cause(event.cardId)}.`;
     case 'Jailed': return `${name} đến nhà chờ và kết thúc lượt.`;
     case 'JailFeePaid': return `${name} trả phí ra nhà chờ ${money(event.amount)}.`;
@@ -189,13 +252,14 @@ function render({ motion } = {}) {
   if (lastRoll && lastRoll.seatId !== turn.activeSeatId) lastRoll = null;
   let context = `Vị trí của ${person(turn.activeSeatId)} · ${spaceName(board.spaces[active.position].id)}.`;
   if (turn.pendingDebt) context = `${person(turn.pendingDebt.from)} cần trả ${money(turn.pendingDebt.amount)} cho ${person(turn.pendingDebt.to)}. ${cardCopy[turn.pendingDebt.sourceId] ?? (turn.pendingDebt.sourceId === 'jail' ? 'Phí ra nhà chờ' : spaceName(turn.pendingDebt.sourceId))}`;
-  if (turn.phase === 'Auction') context = turn.auction.kind === 'building' ? 'Công trình cuối đang được giữ cho cuộc đấu giá. Chọn rõ người đặt giá.' : `Đấu giá ${spaceName(turn.auction.spaceId)}. Chọn rõ người đặt giá hoặc bỏ lượt.`;
+  if (turn.phase === 'Auction') context = '';
   if (turn.phase === 'BuildingDemand') context = 'Công trình cuối được giữ lại. Mọi người được mời cần đăng ký ô hợp lệ hoặc từ chối.';
   $('local-context').textContent = finished ? 'Ván chơi đã kết thúc. Không còn lượt hoặc quyết định cần thực hiện.' : context;
   $('local-roll-result').textContent = finished ? '' : rollText(lastRoll);
   const chooser = $('local-actor'); chooser.replaceChildren(...allowed.map((id) => { const option = node('option', person(id)); option.value = id; return option; })); chooser.value = actorId;
   const actorLabel = $('local-actor-label');
   actorLabel.hidden = allowed.length <= 1;
+  actorLabel.firstElementChild.textContent = turn.phase === 'Auction' ? transactionCopy.bidder : 'Người đang cầm máy';
   const core = ['AwaitRoll', 'AwaitPurchase', 'AwaitEnd'].includes(turn.phase) && actorId === turn.activeSeatId;
   if (core) $('local-controls').after(actorLabel);
   else $('local-handoff').before(actorLabel);
@@ -255,6 +319,7 @@ function render({ motion } = {}) {
   }
   if (inspectedSpaceId) renderSpaceDetail();
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
+  renderAuction();
   renderOutcome();
   if (finished) $('local-outcome').hidden = true;
   locks();

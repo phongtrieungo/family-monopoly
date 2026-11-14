@@ -10,6 +10,7 @@ The repository carries [Apache-2.0](../../LICENSE). Record third-party permissio
 | IP-04 | Prototype names, synthetic board and copy | Project-authored with Codex in B-02 and B-05 | See the file review below. Public branding review remains open. |
 | IP-05 | EPIC-005/ST-501 presentation research and original mock | Reference-only SRC-08–11; original SVG/CSS/JS art authored for this project on 2026-11-08 | No third-party artwork/font/audio imported. Original mock remains internal and has owner UI approval dated 2026-11-08; B-09 gates remain open. |
 | IP-06 | ST-502 production neighborhood, seats and deed | Internal SRC-12; Phaser geometry adapted from ST-501 by Codex on 2026-11-14 | Local internal prototype. No imported artwork, remote assets, bundled fonts or sound. B-09 reviews remain open. |
+| IP-07 | ST-503 card, payment and auction treatments | Internal SRC-13. Project-authored Vietnamese labels and CSS paper treatments in `src/web/local-vi.js` and `src/web/style.css`, with storefront geometry reused from IP-06. | Local internal prototype. No third-party assets were imported. B-09 reviews remain open. |
 
 Each imported asset needs a path, author/rightsholder, source, license or permission evidence, modification record, attribution, approved distribution scope and reviewer. Keep required notices with the material. Review public branding and distribution separately from internal prototype access.
 

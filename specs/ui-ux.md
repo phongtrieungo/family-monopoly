@@ -39,3 +39,15 @@ The oblique board projects accepted dice, movement, ownership and development. S
 | Keyboard, phone and authoritative result equivalents | [AC-38](features/local-play.feature), [AC-10](features/interface.feature) |
 
 See the [ST-502 verification record](../_bmad-output/implementation-artifacts/spec-5-502-playable-table-and-core-turn.md#verification-evidence).
+
+## ST-503 cards, auctions and transaction feedback
+
+The shared local decision sheet shows published Vietnamese card text alongside the accepted result. Payment feedback names the parties, amount and cause when available and shows current synchronized balances. The auction deed identifies the item, leading bid or opening price, selected bidder and available cash. Bid and pass remain native actions gated by the existing device handoff. Accepted settlement or all-pass appears as a single result, and the existing activity dialog provides a readable event record.
+
+| Flow | Existing scenario contract |
+| --- | --- |
+| Published cards and accepted payments | [AC-06](features/turn.feature), [AC-14–18 and AC-31](features/full-match.feature) |
+| Property and final-building auctions, bidding and explicit device handoff | [AC-11–13 and AC-24–25](features/full-match.feature), [AC-35](features/local-play.feature) |
+| Refresh, retry and native controls | [AC-36 and AC-38](features/local-play.feature) |
+
+Implementation and unrun checks are recorded in the [ST-503 spec](../_bmad-output/implementation-artifacts/spec-5-503-cards-auctions-transaction-feedback.md#verification).
