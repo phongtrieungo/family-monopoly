@@ -21,6 +21,9 @@ let inspectedSpaceId;
 const portfolioSelection = new Map();
 const inspectionOpen = () => Boolean(document.querySelector('.local-page dialog[open]'));
 let renderedFinished = false;
+let soundEnabled = false;
+let audioContext;
+let audioOutput;
 let lastRoll = game?.lastRoll ?? null;
 const credential = (id) => game?.sessions.find((entry) => entry.seatId === id)?.session;
 const person = (id) => state?.seats.find((entry) => entry.id === id)?.name ?? 'Ngân hàng';
@@ -30,6 +33,31 @@ function save() {
   if (pending) sessionStorage.setItem('local-command', JSON.stringify(pending)); else sessionStorage.removeItem('local-command');
 }
 function error(code) { errorCode = code; $('local-error').hidden = !code; $('local-error').textContent = code ? errors[code] ?? errors.Unknown : ''; }
+function playEffect(kind) {
+  if (!soundEnabled) return;
+  try {
+    audioContext ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (kind === 'toggle' && audioContext.state === 'suspended') {
+      void audioContext.resume().then(() => playEffect('preview')).catch(() => {});
+      return;
+    }
+    if (audioContext.state !== 'running') return;
+    if (!audioOutput) {
+      audioOutput = audioContext.createGain();
+      audioOutput.connect(audioContext.destination);
+    }
+    audioOutput.gain.value = 1;
+    const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(kind === 'finish' ? 660 : 520, now);
+    if (kind === 'finish') oscillator.frequency.exponentialRampToValueAtTime(880, now + .22);
+    gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(.045, now + .025);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + (kind === 'finish' ? .32 : .16));
+    oscillator.connect(gain); gain.connect(audioOutput);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+    oscillator.start(now); oscillator.stop(now + (kind === 'finish' ? .34 : .18));
+  } catch { /* Sound is optional; text remains authoritative. */ }
+}
 async function api(path, body, session) {
   let response;
   try {
@@ -440,6 +468,8 @@ async function syncNow({ animate = true } = {}) {
         } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
       } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
       render({ motion });
+      if (!resynced && before?.status === 'InMatch' && state.status === 'Finished' &&
+          accepted.some(({ events }) => events.some(({ type }) => type === 'MatchFinished'))) playEffect('finish');
       const announcement = (resynced || !before ? [] : accepted).flatMap(({ events }) => events.map(describe)).filter(Boolean).join(' ');
       const finishedAnnouncement = state.status === 'Finished' ? `${person(state.turn.winnerSeatId)} thắng ván chơi! Cảm ơn cả nhà đã cùng chơi.` : '';
       $('local-announcement').textContent = announcement || finishedAnnouncement || (before?.turn.phase !== state.turn.phase ? `${phases[state.turn.phase]} · ${person(preferred())}` : '');
@@ -485,6 +515,13 @@ async function submit(type, payload = {}) {
   await sendPending();
 }
 $('local-actor').addEventListener('change', (event) => selectActor(event.target.value));
+$('local-sound-toggle').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  $('local-sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
+  $('local-sound-toggle').textContent = soundEnabled ? 'Âm thanh: bật' : 'Âm thanh: tắt';
+  if (soundEnabled) playEffect('toggle');
+  else if (audioOutput) audioOutput.gain.value = 0;
+});
 $('confirm-handoff').addEventListener('click', () => { if (!online || busy || pending) return; acknowledgedSeatId = actorId; render(); $('local-turn-heading').focus(); });
 $('skip-local-motion').addEventListener('click', () => boardView?.skipMotion());
 $('celebrate-local').addEventListener('click', () => {

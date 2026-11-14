@@ -19,9 +19,8 @@ development_status:
   epic-2-retrospective: optional
   epic-5: in-progress
   5-501-game-ui-visual-contract-and-mockup-approval: done
-  5-502-playable-table-and-core-turn: review
-  5-503-cards-auctions-and-transaction-feedback: review
-  # Implementation recorded in the story spec. Verification and review are pending.
-  5-504-portfolio-trade-and-recovery: in-progress
-  5-505-finish-and-complete-game-acceptance: backlog
+  5-502-playable-table-and-core-turn: done
+  5-503-cards-auctions-and-transaction-feedback: done
+  5-504-portfolio-trade-and-recovery: done
+  5-505-finish-and-complete-game-acceptance: done
   epic-5-retrospective: optional

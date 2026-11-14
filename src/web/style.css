@@ -216,7 +216,6 @@ a { color: #215a4c; }
 .handoff { background: #fff0cd; border: 1px solid #c8a96a; border-radius: .7rem; padding: .8rem; margin: .8rem 0; }
 #local-actor-label { margin: .8rem 0; }
 #local-error, #local-connection { padding: .7rem; background: #fff0cd; border-radius: .5rem; }
-#local-winner { padding: 1rem; background: #d8edbd; border-radius: .6rem; }
 @media (min-width: 56rem) {
   .local-layout { grid-template-columns: minmax(0, 1fr) clamp(19rem, 28vw, 23rem); }
   #local-match .local-sheet { max-height: calc(100dvh - 11.75rem); }
@@ -283,8 +282,10 @@ a { color: #215a4c; }
 
 /* Original CSS celebration: presentation only; the complete result is always readable. */
 .local-finish { border: 2px solid #287e78; border-radius: 16px; padding: 1rem; background: #f4f8e9; }
-.local-finish li { margin-block: .75rem; overflow-wrap: anywhere; }
+.local-finish { min-width: 0; overflow-wrap: anywhere; }
+.local-finish ul { padding: 0; list-style: none; }
+.local-finish li { padding: .65rem; margin-block: .5rem; border: 1px solid var(--line); border-radius: .5rem; background: #fffdf4; }
 .local-finish button { min-height: 44px; margin-block: .25rem; }
-.local-finish.celebrating { animation: family-celebration 1.4s ease-in-out infinite alternate; }
-@keyframes family-celebration { to { box-shadow: 0 0 0 8px #e4bf6355; } }
+.local-finish.celebrating { animation: family-celebration 800ms ease-in-out; }
+@keyframes family-celebration { 50% { box-shadow: 0 0 0 8px #e4bf6355; } }
 @media (prefers-reduced-motion: reduce) { .local-finish.celebrating { animation: none; border-color: #b68422; box-shadow: 0 0 0 4px #e4bf6355; } }

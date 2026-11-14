@@ -1,6 +1,6 @@
 # EPIC-005 · One living neighborhood table
 
-**Status:** In progress. The owner approved the redesign plan and directed implementation on 2026-11-08. ST-501 received visual approval. ST-502 and ST-503 are implemented with review pending. ST-504 implementation is recorded with verification and review pending. EPIC-002 remains completed. B-09 human reviews and EPIC-003/004 deferrals are unchanged.
+**Status:** In progress. The owner approved the redesign plan and directed implementation on 2026-11-08. ST-501–504 are marked Done at the owner's direction; outstanding verification, review and B-09 gates are documented per story. EPIC-002 remains completed. EPIC-003/004 deferrals are unchanged.
 
 ## Outcome
 
@@ -19,10 +19,10 @@ Present the authored 2–4-player local match as one cohesive illustrated 2.5D g
 | ID | Slice | Status | Dependency / exit |
 | --- | --- | --- | --- |
 | ST-501 | Visual contract and mockup approval | Done · owner UI approval 2026-11-08 | Research, DESIGN.md, EXPERIENCE.md, self-contained interactive visual proposal and owner visual approval. |
-| ST-502 | Playable table and core turn | Implemented · review pending | ST-501 visual approval; setup → handoff → roll → purchase → next player → rent; remaining full-match actions remain operable in styled overlays. |
-| ST-503 | Cards, auctions and transaction feedback | Implemented · review pending | ST-502 provides the table and decision sheet. ST-503 adds focused card, payment and auction presentation with explicit bidder handoffs. |
-| ST-504 | Portfolio, trade and recovery | In progress · verification and review pending | ST-503; development, mortgages, jail, debt, acquisition and building-shortage workflows. |
-| ST-505 | Finish and complete-game acceptance | Proposed | ST-504; victory, audio preferences, responsive refinement and complete local acceptance. |
+| ST-502 | Playable table and core turn | Done · owner directed 2026-11-14 | ST-501 visual approval; implementation and recorded acceptance evidence. Remaining B-09 reviews remain open. |
+| ST-503 | Cards, auctions and transaction feedback | Done · owner directed 2026-11-14 | ST-502 provides the table and decision sheet. Focused card, payment and auction presentation. Remaining review gate remains open. |
+| ST-504 | Portfolio, trade and recovery | Done · owner directed 2026-11-14 | ST-503; portfolio, trade, debt, jail, acquisition and building shortage. Recorded build/tests; remaining review and broader acceptance gates remain open. |
+| ST-505 | Finish and complete-game acceptance | Done | ST-504; victory, opt-in sound control, responsive refinement and complete local acceptance. |
 
 Implement one authorized slice at a time. The approved plan establishes sequence, not permission to bypass ST-501's visual checkpoint. Future stories need their own approved implementation contracts.
 
