@@ -41,7 +41,7 @@ export function propertyOptions(turn, board, actorId) {
   });
 }
 
-export function decisionControls({ state, board, actorId, submit, selectActor }) {
+export function decisionControls({ state, board, actorId, submit, selectActor, inspectSpace, purchaseActions }) {
   const { turn } = state; const phase = turn.phase; const actor = turn.seats.find(({ id }) => id === actorId);
   const title = (id) => { const space = board.spaces.find((entry) => entry.id === id); return board.copy[space?.labelKey] ?? id; };
   const person = (id) => state.seats.find((entry) => entry.id === id)?.name ?? 'Ngân hàng';
@@ -62,9 +62,34 @@ export function decisionControls({ state, board, actorId, submit, selectActor })
   }
   if (phase === 'AwaitEnd' && actorId === turn.activeSeatId) root.append(act('EndTurn', 'Kết thúc lượt'));
   if (phase === 'AwaitPurchase' && actorId === turn.activeSeatId) {
-    const space = board.spaces[actor.position]; const cost = space.economy?.price ?? space.price;
-    root.append(node('p', `${title(space.id)} · Giá ${money(cost)}. Từ chối sẽ mở đấu giá cho mọi người.`));
-    root.append(act('Buy', `Mua với ${money(cost)}`, {}, actor.cash >= cost), act('Decline', 'Từ chối và mở đấu giá'));
+    const space = board.spaces[actor.position];
+    const price = space.economy?.price ?? space.price;
+    const affordable = actor.cash >= price;
+    const deed = node('div', '', 'local-deed');
+    const art = node('div', '', 'local-deed-art');
+    art.setAttribute('aria-hidden', 'true');
+    art.append(node('span'), node('span'), node('span'));
+    const terms = node('dl');
+    const rent = space.economy ? money(space.economy.rents[0])
+      : space.type === 'transit' ? money(board.transit.rents[0])
+      : `${board.service.multipliers[0]} lần tổng một lần gieo riêng`;
+    const facts = [
+      ['Giá mua', money(price)], ['Tiền đang có', money(actor.cash)],
+      ['Còn lại nếu mua', affordable ? money(actor.cash - price) : 'Không đủ tiền'],
+      ['Tiền thuê cơ bản', rent],
+    ];
+    for (const [label, value] of facts) {
+      const row = node('div'); row.append(node('dt', label), node('dd', value)); terms.append(row);
+    }
+    const decline = act('Decline', 'Từ chối và mở đấu giá');
+    decline.className = 'secondary';
+    purchaseActions.append(act('Buy', `Mua với ${money(price)}`, {}, affordable), decline);
+    const inspect = node('button', 'Xem đầy đủ khu đất', 'secondary');
+    inspect.type = 'button';
+    inspect.addEventListener('click', () => inspectSpace(space.id, inspect));
+    const group = space.type === 'street' ? `Nhóm ${space.groupId}` : space.type === 'transit' ? 'Bến xe' : 'Dịch vụ';
+    deed.append(art, node('h3', title(space.id)), node('p', group, 'local-note'), terms, inspect);
+    root.append(deed);
   }
   if (debtor) {
     const debt = turn.pendingDebt;

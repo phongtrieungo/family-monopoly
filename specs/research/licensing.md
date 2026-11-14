@@ -9,6 +9,7 @@ The repository carries [Apache-2.0](../../LICENSE). Record third-party permissio
 | IP-03 | Vietnam visuals, fonts, audio and tokens | Sources pending | Use project-authored or individually cleared assets. |
 | IP-04 | Prototype names, synthetic board and copy | Project-authored with Codex in B-02 and B-05 | See the file review below. Public branding review remains open. |
 | IP-05 | EPIC-005/ST-501 presentation research and original mock | Reference-only SRC-08–11; original SVG/CSS/JS art authored for this project on 2026-11-08 | No third-party artwork/font/audio imported. Original mock remains internal and has owner UI approval dated 2026-11-08; B-09 gates remain open. |
+| IP-06 | ST-502 production neighborhood, seats and deed | Internal SRC-12; Phaser geometry adapted from ST-501 by Codex on 2026-11-14 | Local internal prototype. No imported artwork, remote assets, bundled fonts or sound. B-09 reviews remain open. |
 
 Each imported asset needs a path, author/rightsholder, source, license or permission evidence, modification record, attribution, approved distribution scope and reviewer. Keep required notices with the material. Review public branding and distribution separately from internal prototype access.
 
@@ -36,3 +37,7 @@ ST-501 adds `design/game-ui/index.html`, `style.css` and `mock.js` as an isolate
 Codex inspected the installed package metadata and bundled MIT notices on 2026-11-06. The isolated spike uses Phaser 3.90.0 (Richard Davey / Phaser Studio Inc.), React 19.2.0 and React DOM 19.2.0 (Meta Platforms, Inc. and affiliates), with eventemitter3 5.0.4 (Arnout Kazemier) and scheduler 0.27.0 (Meta Platforms, Inc. and affiliates). All five installed package manifests declare MIT; their notices are retained in `spikes/st-201/licenses/`, and `bun.lock` pins the exact resolved packages. Phaser's optional third-party plugins are not imported by the spike. Review the final bundled material, notices and intended distribution scope before shipping; internal evaluation is not public distribution approval.
 
 The spike's geometric board, tokens, page layout, card treatment, copy, screenshots and movement recording were authored for this project in B-11. System fonts are used; no imported font, image or audio asset is included. They are internal visual drafts; fluent-reader, branding, family and public distribution reviews remain open.
+
+## ST-502 production visual provenance
+
+Codex adapted the ST-501 shallow projection, paths, pond, plaza, shop fronts, tree canopies and four piece silhouettes to Phaser in `src/web/local-board.js`. The deed storefront and table materials are original CSS in `src/web/style.css`. The application uses system fonts and the existing authored space names, prices and rent schedules. Internal source review covers the geometry and cached local bundle. No third-party imagery was imported or traced. The existing Phaser and dependency notices remain applicable.

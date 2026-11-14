@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { vnNeighborhoodBoard, vnOriginalRules } from '../src/domain/vn-original-content.js';
 import { board, rules } from '../src/domain/synthetic-board.js';
@@ -19,6 +20,7 @@ const store = createRoomFileStore(join(directory, 'rooms.json'));
 const rooms = createRoomService({ board, rules, startingCash: 100, store });
 const localRooms = createRoomService({ board: vnNeighborhoodBoard, rules: vnOriginalRules, startingCash: 1200, store,
   rollDice: () => { assert.ok(dice.length, 'unexpected authoritative roll'); return dice.shift(); }, shuffleDeck: (ids) => ids });
+const st502Evidence = !st203Only && !st204Only && !st205Only && !st206Only;
 let server;
 let chrome;
 let socket;
@@ -42,13 +44,13 @@ function send(method, params = {}, sessionId) {
     socket.send(JSON.stringify({ id, method, params, sessionId }));
   });
 }
-async function tab(width, mobile, reducedMotion = true) {
+async function tab(width, mobile, reducedMotion = true, height = 800) {
   const { browserContextId } = await send('Target.createBrowserContext');
   const { targetId } = await send('Target.createTarget', { url: 'about:blank', browserContextId });
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   const call = (method, params) => send(method, params, sessionId);
   await call('Page.enable');
-  await call('Emulation.setDeviceMetricsOverride', { width, height: 800, deviceScaleFactor: 1, mobile });
+  await call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
   if (reducedMotion) await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   if (mobile) await call('Emulation.setTouchEmulationEnabled', { enabled: true });
   const run = async (expression) => {
@@ -76,7 +78,7 @@ async function tab(width, mobile, reducedMotion = true) {
     const point = await run(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); const rect = node.getBoundingClientRect(); const x = rect.x + rect.width / 2; const y = rect.y + rect.height / 2; if (!node.contains(document.elementFromPoint(x, y))) throw Error('Touch target is covered or outside viewport'); return { x, y }; })()`);
     try {
       await call('Input.synthesizeTapGesture', { x: point.x, y: point.y, gestureSourceType: 'touch', duration: 50 });
-    } catch (error) { throw Error(`Touch ${selector}: ${error.message}`); }
+    } catch (error) { throw Error(`Touch ${selector} at ${JSON.stringify(point)}: ${error.message}`); }
   };
   return { call, run, wait, click, key, tap, dialog: (accept) => dialogResponses.set(sessionId, accept) };
 }
@@ -184,9 +186,111 @@ async function shot(page, name) {
   const { data } = await page.call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   writeFileSync(join('/tmp', name), Buffer.from(data, 'base64'));
 }
+async function assertInspection(page, touch = false) {
+  if (touch) await page.tap('#open-local-spaces');
+  else {
+    await page.run("document.querySelector('#open-local-spaces').focus()");
+    await page.key('Enter', 'Enter', 13);
+  }
+  assert.equal(await page.run("document.activeElement.id"), 'local-space-heading');
+  assert.equal(await page.run("new Set([...document.querySelectorAll('#local-spaces button')].map(button => button.dataset.spaceId)).size"), 40);
+  const firstProperty = '[data-space-id="VN-S01"]';
+  if (touch) await page.tap(firstProperty);
+  else {
+    await page.key('Tab', 'Tab', 9);
+    assert.equal(await page.run("document.querySelector('#local-space-details').contains(document.activeElement) && getComputedStyle(document.activeElement).outlineStyle !== 'none'"), true);
+    await page.run(`document.querySelector('${firstProperty}').focus()`);
+    await page.key('Enter', 'Enter', 13);
+  }
+  assert.equal(await page.run("document.activeElement.id"), 'local-space-heading');
+  assert.match(await page.run("document.querySelector('#local-space-copy').textContent"), /VN-S01.*80 xu.*4 xu/);
+  if (touch) await page.tap('#back-local-spaces');
+  else await page.click('#back-local-spaces');
+  assert.equal(await page.run("document.activeElement.dataset.spaceId"), 'VN-S01');
+  if (touch) await page.tap('#local-space-details button:not([type])');
+  else await page.key('Escape', 'Escape', 27);
+  await page.wait("!document.querySelector('#local-space-details').open && document.activeElement.id === 'open-local-spaces'");
+}
+
+async function assertTableLayouts(page, command, label) {
+  const layouts = [[1440, 900], [1280, 720], [1024, 768], [768, 1024], [360, 800]];
+  for (const [width, height] of layouts) {
+    await page.call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 800 });
+    await page.run("document.querySelector('#local-sheet-content').scrollTop = 0; window.scrollTo(0, 0)");
+    await page.wait(`innerWidth === ${width} && innerHeight === ${height}`);
+    await page.run('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    const layout = await page.run(`(() => {
+      const sheet = document.querySelector('#local-sheet');
+      const content = document.querySelector('#local-sheet-content');
+      const board = document.querySelector('#local-board');
+      const seat = document.querySelector('#local-players');
+      const action = document.querySelector('${control(command)}');
+      const sb = sheet.getBoundingClientRect(), bb = board.getBoundingClientRect();
+      const ab = action.getBoundingClientRect(), hb = seat.getBoundingClientRect();
+      return { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, sheetBottom: sb.bottom, boardBottom: bb.bottom,
+        boardBeforeSheet: bb.bottom < sb.top && hb.bottom <= bb.top, landscape: bb.right < sb.left,
+        boardVisible: bb.top >= 0 && bb.bottom <= innerHeight,
+        actionVisible: ab.top >= sb.top && ab.bottom <= Math.min(sb.bottom, innerHeight),
+        scrollable: getComputedStyle(content).overflowY === 'auto', overflow: content.scrollHeight > content.clientHeight };
+    })()`);
+    assert.equal(layout.width, width, JSON.stringify({ label, width, layout }));
+    assert.equal(layout.boardVisible, true, JSON.stringify({ label, width, layout }));
+    assert.equal(layout.scrollable, true);
+    if (width >= 1024) {
+      assert.equal(layout.height, height, JSON.stringify({ label, width, layout }));
+      assert.ok(layout.landscape && layout.actionVisible, JSON.stringify({ label, width, layout }));
+    } else {
+      assert.ok(layout.boardBeforeSheet, JSON.stringify({ label, width, layout }));
+      if (command === 'Buy') {
+        assert.equal(layout.overflow, true, JSON.stringify({ label, width, layout }));
+        assert.equal(layout.actionVisible, true, JSON.stringify({ label, width, layout }));
+        assert.equal(await page.run(`document.querySelector('${control('Decline')}').getBoundingClientRect().bottom <= innerHeight`), true);
+      } else if (width === 360) assert.equal(layout.actionVisible, true, JSON.stringify({ label, width, layout }));
+    }
+    await shot(page, `family-monopoly-st502-${label}-${width}.png`);
+  }
+
+  // Half the CSS viewport and double the pixel density to exercise 200% browser reflow.
+  await page.call('Emulation.setDeviceMetricsOverride', { width: 720, height: 450, deviceScaleFactor: 2, mobile: false });
+  assert.equal(await page.run("document.documentElement.scrollWidth"), 720);
+  await page.run(`document.querySelector('${control(command)}').focus()`);
+  assert.equal(await page.run(`(() => { const rect = document.activeElement.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight; })()`), true);
+  await assertInspection(page);
+  await page.call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await page.run("document.querySelector('#local-sheet-content').scrollTop = 0; window.scrollTo(0, 0)");
+}
+async function captureApprovedMock() {
+  const mock = await tab(1440, false, true, 900);
+  const file = pathToFileURL(join(process.cwd(), 'design/game-ui/index.html'));
+  for (const [width, height] of [[1440, 900], [360, 800]]) {
+    await mock.call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 800 });
+    for (const fixture of ['table', 'purchase']) {
+      file.searchParams.set('scene', fixture);
+      await mock.call('Page.navigate', { url: file.href });
+      await mock.wait(`new URLSearchParams(location.search).get('scene') === '${fixture}' && document.querySelector('#fixture-select')?.value === '${fixture}' && Boolean(document.querySelector('#space-VN-S01'))`);
+      await mock.run("document.querySelector('#game').scrollIntoView({ block: 'start' })");
+      await shot(mock, `family-monopoly-st502-mock-${fixture}-${width}.png`);
+    }
+  }
+}
+
+async function assertCanvasFallback(url) {
+  const canvas = await tab(360, true);
+  await canvas.call('Page.addScriptToEvaluateOnNewDocument', { source: `
+    const originalContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...params) {
+      return type.includes('webgl') ? null : originalContext.call(this, type, ...params);
+    };
+  ` });
+  dice.unshift([6, 6], [5, 5], [4, 4]);
+  await setup(canvas, url, true, 3);
+  await canvas.wait("document.querySelector('#local-board').dataset.renderer === 'canvas'");
+  assert.equal(await canvas.run("document.querySelectorAll('#local-players > li').length"), 3);
+  await assertInspection(canvas, true);
+}
 try {
   server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createRequestHandler(rooms, { localRooms }) });
-  await startChrome(); desktop = await tab(1440, false, !st203Only);
+  await startChrome(); desktop = await tab(1440, false, !st203Only, 900);
   await setup(desktop, new URL('/local', server.url).href);
   const desktopDice = [...dice];
   phone = await tab(360, true); await setup(phone, new URL('/local', server.url).href, true);
@@ -249,7 +353,7 @@ try {
         await assertCommittedRoll(desktop);
         await desktop.run(`(() => { const original = window.fetch; let lost = false; window.fetch = async (path, options) => { const response = await original(path, options); if (!lost && path === '/api/local/command' && JSON.parse(options.body).type === 'Buy') { lost = true; throw new TypeError('injected response loss'); } return response; }; })()`);
         await action(control('Buy')); await desktop.wait("!document.querySelector('#local-retry').hidden && !document.querySelector('#retry-command').disabled");
-        const bought = await snapshot(desktop); await action('#retry-command'); await desktop.wait(enabled('EndTurn'));
+        const bought = await snapshot(desktop); await action('#retry-command'); await handoff(desktop, touch); await desktop.wait(enabled('EndTurn'));
         assert.deepEqual((await snapshot(desktop)).turn, bought.turn);
         assert.equal((await snapshot(desktop)).revision, bought.revision);
         const purchaseEvents = store.read().find((room) => room.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'PropertyBought');
@@ -345,7 +449,7 @@ try {
           retry: { revision: bought.revision, propertyBoughtEvents: purchaseEvents.length },
           acquisitionRevision: acquisition.revision, finishedRevision: finished.revision,
           finishEvents: retained.history.flatMap(({ events }) => events).filter(({ type }) => ['SeatBankrupted', 'MatchFinished'].includes(type)).map(({ type }) => type), capture: '/tmp/' + capture });
-        await action('#new-local'); await desktop.wait("document.querySelector('#local-setup') && !document.querySelector('#local-setup').hidden");
+        desktop.dialog(true); await action('#new-local'); await desktop.wait("document.querySelector('#local-setup') && !document.querySelector('#local-setup').hidden");
         assert.equal(await desktop.run("sessionStorage.getItem('local-game')"), null);
         assert.deepEqual(store.read().find((room) => room.id === roomId).turn, retained.turn);
         // Also exercise confirmed unfinished replacement without deleting server state.
@@ -407,7 +511,7 @@ try {
     for (const seat of paid.turn.seats.slice(0, 2)) assert.ok((await outcome()).includes(new Intl.NumberFormat('vi-VN').format(seat.cash) + ' xu'));
     assert.ok((await outcome()).includes(await desktop.run("(() => { const b = JSON.parse(sessionStorage.getItem('local-game')).board; return b.copy[b.spaces[39].labelKey]; })()")));
     const paymentOutcome = await outcome();
-    await desktop.click('#retry-command'); await desktop.wait(enabled('EndTurn'));
+    await desktop.click('#retry-command'); await handoff(desktop); await desktop.wait(enabled('EndTurn'));
     assert.equal(await outcome(), paymentOutcome); assert.equal((await snapshot(desktop)).turn.seats[0].cash, 40);
     await desktop.run(`(() => { const original = window.fetch; let gap = false; window.fetch = async (path, options) => {
       if (path.startsWith('/api/local/sync?since=') && !gap) { gap = true; return new Response(JSON.stringify({ error: 'ResyncRequired' }), { status: 409 }); }
@@ -522,8 +626,44 @@ try {
     await desktop.wait("document.querySelector('#local-error').textContent.includes('Ván chơi vừa thay đổi')");
     await desktop.wait("document.querySelector('#local-context').textContent.includes('40 xu')");
     assert.equal((await snapshot(desktop)).turn.seats[0].cash, 80);
+    await handoff(desktop);
     await desktop.click(control('SettleDebt')); await desktop.wait(enabled('EndTurn'));
     assert.equal((await snapshot(desktop)).turn.seats[0].cash, 40);
+
+    assert.equal(await desktop.run("document.querySelector('#local-purchase-actions > legend')?.textContent"), 'Mua khu đất hoặc mở đấu giá');
+
+    // A retry rejected at the same revision must reopen handoff before any fresh intent.
+    await seed((turn) => {
+      turn.phase = 'AwaitDebt'; turn.seats[0].cash = 80;
+      turn.pendingDebt = { kind: 'payment', from: ids[0], to: ids[1], amount: 40, ledgerType: 'RentPaid', sourceId: 'VN-S39' };
+      turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }];
+    });
+    await desktop.wait(enabled('SettleDebt'));
+    const beforeRejectedRetry = await snapshot(desktop);
+    await desktop.run(`(() => {
+      const original = window.fetch;
+      let firstBody;
+      window.fetch = async (path, options) => {
+        if (path !== '/api/local/command' || JSON.parse(options.body).type !== 'SettleDebt') return original(path, options);
+        if (!firstBody) {
+          firstBody = options.body;
+          throw new TypeError('No response before settlement reached the server');
+        }
+        window.fetch = original;
+        if (options.body !== firstBody) throw new Error('Retry changed the original intent');
+        return new Response(JSON.stringify({ error: 'ActionRejected' }), { status: 400 });
+      };
+    })()`);
+    await desktop.click(control('SettleDebt'));
+    await desktop.wait("!document.querySelector('#local-retry').hidden && !document.querySelector('#retry-command').disabled");
+    assert.equal(await desktop.run("document.querySelector('#local-handoff').hidden"), true);
+    await desktop.click('#retry-command');
+    await desktop.wait("document.querySelector('#local-retry').hidden && !document.querySelector('#local-handoff').hidden && !document.querySelector('#confirm-handoff').disabled");
+    assert.match(await desktop.run("document.querySelector('#local-error').textContent"), /Thao tác không hợp lệ/);
+    assert.equal(await desktop.run("document.activeElement.id === 'handoff-heading' && !document.querySelector('[data-command=SettleDebt]:enabled')"), true);
+    assert.deepEqual(await snapshot(desktop), beforeRejectedRetry);
+    await handoff(desktop);
+    await desktop.wait(enabled('SettleDebt'));
 
     // Review a mortgaged trade, navigate back to edit, then let only the target accept.
     await seed((turn) => {
@@ -584,10 +724,12 @@ try {
     await phone.tap(control('ChooseMortgage')); await phone.wait("!document.querySelector('#local-handoff').hidden"); await handoff(phone, true);
     await phone.wait("document.documentElement.scrollWidth === 360");
     assert.ok(await phone.run("document.querySelector('[data-command=EndTurn]').getBoundingClientRect().height >= 44"));
-    console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-205 / AC-11, AC-19–21, AC-24–32, AC-36–38', browser: 'Chrome desktop keyboard and 360px touch viewport, reduced motion', flows: ['debt identity and lawful mortgage liquidation', 'lost settlement response, refresh and exact retry', 'stale rejection retains debt context for fresh intent', 'two-sided mortgaged trade review with frozen confirmed terms', 'edit after review', 'recipient cancellation without settlement', 'target-only acceptance and acquisition charges', 'keyboard and touch handoffs', '360px trade review controls'] }, null, 2));
+    console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-205 / AC-11, AC-19–21, AC-24–32, AC-36–38', browser: 'Chrome desktop keyboard and 360px touch viewport, reduced motion', flows: ['debt identity and lawful mortgage liquidation', 'lost settlement response, refresh and exact retry', 'stale rejection retains debt context for fresh intent', 'same-revision rejected retry reopens handoff', 'two-sided mortgaged trade review with frozen confirmed terms', 'edit after review', 'recipient cancellation without settlement', 'target-only acceptance and acquisition charges', 'keyboard and touch handoffs', '360px trade review controls'] }, null, 2));
   } else {
   await desktop.run("document.querySelector('#confirm-handoff').focus()"); await desktop.key('Enter', 'Enter', 13);
-  await desktop.wait(enabled('Roll')); await desktop.click(control('Roll'));
+  await desktop.wait(enabled('Roll'));
+  if (st502Evidence) await assertTableLayouts(desktop, 'Roll', 'turn');
+  await desktop.click(control('Roll'));
   if (st203Only) {
     await desktop.wait("document.querySelector('#local-board').dataset.animating === 'true' && !document.querySelector('#skip-local-motion').hidden");
     await desktop.click('#skip-local-motion');
@@ -595,6 +737,20 @@ try {
   }
   await desktop.wait(enabled('Buy')); await assertCommittedRoll(desktop);
   const purchase = await snapshot(desktop); assert.equal(purchase.turn.phase, 'AwaitPurchase');
+  if (st502Evidence) {
+    assert.match(await desktop.run("document.querySelector('.local-deed').textContent"), /Sân nhỏ Hà Nội.*Giá mua.*Tiền đang có.*Còn lại nếu mua.*Tiền thuê cơ bản/);
+    await assertTableLayouts(desktop, 'Buy', 'purchase');
+    await desktop.click('.local-deed > button');
+    assert.equal(await desktop.run("document.activeElement.id"), 'local-space-heading');
+    await desktop.key('Escape', 'Escape', 27);
+    await desktop.wait("document.activeElement.matches('.local-deed > button')");
+    await desktop.click('#open-local-history');
+    assert.equal(await desktop.run("document.activeElement.id"), 'local-history-heading');
+    await desktop.key('Escape', 'Escape', 27);
+    await desktop.wait("document.activeElement.id === 'open-local-history'");
+    await assertCanvasFallback(new URL('/local', server.url).href);
+    await captureApprovedMock();
+  }
 
   // Third consecutive double must present the committed forced-jail outcome,
   // even though the dice distance itself points somewhere else.
@@ -641,10 +797,21 @@ try {
   }; })()`);
   await desktop.click(control('Buy')); await desktop.wait("!document.querySelector('#local-retry').hidden && !document.querySelector('#retry-command').disabled");
   assert.equal((await snapshot(desktop)).turn.seats[0].cash, 1100);
-  await desktop.click('#retry-command'); await desktop.wait(enabled('EndTurn'));
+  const savedIntent = await desktop.run("sessionStorage.getItem('local-command')");
+  const retryOrigin = await desktop.run('performance.timeOrigin');
+  await desktop.call('Page.reload');
+  await desktop.wait(`performance.timeOrigin !== ${retryOrigin} && !document.querySelector('#local-retry').hidden && !document.querySelector('#retry-command').disabled`);
+  assert.equal(await desktop.run("sessionStorage.getItem('local-command')"), savedIntent);
+  assert.equal(await desktop.run("document.querySelector('#local-controls').disabled && document.querySelector('#local-board').dataset.animating === 'false'"), true);
+  await desktop.click('#retry-command'); await handoff(desktop); await desktop.wait(enabled('EndTurn'));
   assert.equal((await snapshot(desktop)).turn.seats[0].cash, 1100);
   assert.equal(store.read().find((entry) => entry.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'PropertyBought').length, 1);
-  await desktop.click(control('EndTurn')); await handoff(desktop); await desktop.click(control('Roll')); await desktop.wait(enabled('Decline'));
+  assert.match(await desktop.run("document.querySelector('#local-outcome').textContent"), /An mua Sân nhỏ Hà Nội với 100 xu.*An: 1\.100 xu/);
+  assert.match(await desktop.run("document.querySelector('#local-players .seat-1').textContent"), /1\.100 xu.*1 tài sản/);
+  await desktop.click(control('EndTurn'));
+  await desktop.wait("!document.querySelector('#local-handoff').hidden && document.querySelector('#handoff-heading').textContent.includes('Bình')");
+  assert.equal(await desktop.run("document.querySelector('#local-controls').disabled"), true);
+  await handoff(desktop); await desktop.click(control('Roll')); await desktop.wait(enabled('Decline'));
   await desktop.click(control('Decline')); await desktop.wait(enabled('Bid'));
   await choose(desktop, ids[2]); await desktop.click(control('Bid'));
   await desktop.wait("document.querySelector('#local-context').textContent.includes('Đấu giá') && document.querySelector('#local-history').textContent.includes('10 xu')");
@@ -653,10 +820,30 @@ try {
   const auction = await snapshot(desktop); assert.equal(auction.turn.activeSeatId, ids[1]); assert.equal(auction.turn.ownership['VN-S05'], ids[2]); assert.equal(auction.turn.seats[2].cash, 1190);
   await desktop.click(control('EndTurn')); await handoff(desktop); await desktop.click(control('Roll')); await desktop.wait(enabled('EndTurn'));
   assert.equal((await snapshot(desktop)).turn.seats[2].cash, 1184);
+  const rent = store.read().find((entry) => entry.id === roomId).history.at(-1).events.find((event) => event.type === 'RentPaid');
+  const current = await snapshot(desktop);
+  const payer = current.seats.find(({ id }) => id === rent.from).name;
+  const recipient = current.seats.find(({ id }) => id === rent.to).name;
+  assert.ok((await desktop.run("document.querySelector('#local-outcome').textContent")).includes(`${payer} trả ${rent.amount} xu tiền thuê cho ${recipient}`));
   await shot(desktop, 'family-monopoly-local-desktop.png');
-
-  // Saved decisions start from AwaitRoll, rather than the earlier purchase fixture.
+  // Submit a stale Roll against an advanced revision. It must generate no event or motion.
   baseTurn = initialTurn;
+  await seed(() => {});
+  await desktop.wait(enabled('Roll'));
+  const staleRoll = store.read().find((entry) => entry.id === roomId);
+  const existingRolls = staleRoll.history.flatMap(({ events }) => events).filter(({ type }) => type === 'Rolled').length;
+  const untouchedDice = dice.length;
+  staleRoll.revision += 1;
+  staleRoll.history.push({ revision: staleRoll.revision, events: [] });
+  store.write(store.read().map((entry) => entry.id === roomId ? staleRoll : entry));
+  await desktop.click(control('Roll'));
+  await desktop.wait("!document.querySelector('#local-error').hidden && document.querySelector('#local-error').textContent.includes('Ván chơi vừa thay đổi')");
+  await desktop.wait("!document.querySelector('#local-handoff').hidden && document.querySelector('#local-controls').disabled");
+  assert.equal(await desktop.run("document.querySelector('#local-board').dataset.animating"), 'false');
+  assert.equal(store.read().find((entry) => entry.id === roomId).history.flatMap(({ events }) => events).filter(({ type }) => type === 'Rolled').length, existingRolls);
+  assert.equal(dice.length, untouchedDice);
+  await handoff(desktop);
+
   // Saved decision fixtures use the same four sessions and production HTTP/UI path.
   await seed((turn) => { turn.seats[0].jailed = true; turn.seats[0].position = 10; turn.retainedCards[ids[0]] = ['VN-C09']; turn.decks.chance = turn.decks.chance.filter((id) => id !== 'VN-C09'); });
   await desktop.wait(enabled('UseReleaseCard')); await desktop.click(control('UseReleaseCard')); await desktop.wait(enabled('Roll'));
@@ -700,7 +887,8 @@ try {
   assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
   dice[0] = [1, 2]; // Keep this phone purchase fixture on a non-double turn.
   await handoff(phone, true); await phone.tap(control('Roll')); await phone.wait(enabled('Buy')); await assertCommittedRoll(phone);
-  await phone.tap('#local-space-details summary'); assert.equal(await phone.run("document.querySelectorAll('#local-spaces li').length"), 40);
+  await assertInspection(phone, true);
+  await shot(phone, 'family-monopoly-st502-phone-purchase.png');
   await phone.tap(control('Buy')); await phone.wait(enabled('EndTurn'));
   await phone.run("window.originalFetch = window.fetch; window.fetch = (path, options) => path.startsWith('/api/local/sync') ? Promise.reject(new TypeError('Injected disconnect')) : window.originalFetch(path, options)");
   await phone.wait("!document.querySelector('#local-connection').hidden && document.querySelector('#local-controls').disabled");
@@ -708,10 +896,27 @@ try {
   assert.equal(await phone.run("document.querySelector('#local-error').hidden"), true);
   assert.equal(await phone.run('document.documentElement.scrollWidth'), 360);
   assert.ok(await phone.run("document.querySelector('[data-command=EndTurn]').getBoundingClientRect().height >= 44"));
-  await phone.run("document.querySelector('#local-space-details').open = false; window.scrollTo(0, 0)");
+  await phone.run("document.querySelector('#local-sheet-content').scrollTop = 0; window.scrollTo(0, 0)");
   await shot(phone, 'family-monopoly-local-phone.png');
+  // The next seat lands on the same bought property in an uninterrupted two-turn flow.
+  dice.unshift([1, 2]);
+  const home = await snapshot(phone);
+  const ownerId = home.turn.ownership['VN-S03'];
+  const activeIndex = home.turn.seats.findIndex(({ id }) => id === ownerId);
+  const nextId = home.turn.seats[(activeIndex + 1) % home.turn.seats.length].id;
+  const ownerName = home.seats.find(({ id }) => id === ownerId).name;
+  const nextName = home.seats.find(({ id }) => id === nextId).name;
+  await phone.tap(control('EndTurn'));
+  await phone.wait(`!document.querySelector('#local-handoff').hidden && document.querySelector('#handoff-heading').textContent.includes(${JSON.stringify(nextName)})`);
+  await handoff(phone, true);
+  await phone.tap(control('Roll'));
+  await phone.wait(enabled('EndTurn'));
+  assert.ok((await phone.run("document.querySelector('#local-outcome').textContent")).includes(`${nextName} trả 6 xu tiền thuê cho ${ownerName}. Sân nhỏ Hà Nội`));
+  const paidRent = await snapshot(phone);
+  assert.equal(paidRent.turn.seats.find(({ id }) => id === nextId).cash, 1194);
+  assert.equal(paidRent.turn.seats.find(({ id }) => id === ownerId).cash, 1106);
   assert.equal(dice.length, 0);
-  console.log(JSON.stringify({ result: 'PASS', contracts: 'AC-33–38', peoplePerPage: 4, browser: 'Chrome 1440px keyboard and 360px touch, reduced motion', flows: ['setup', 'handoff', 'purchase refresh', 'lost-response retry', 'explicit auction actors', 'rent', 'jail fee and release card', 'debt liquidation and settlement', 'mortgage acquisition', 'trade confirmation', 'building and sale', 'building demand auction', 'hotel shortage liquidation', 'winner', 'offline recovery'], screenshots: ['/tmp/family-monopoly-local-desktop.png', '/tmp/family-monopoly-local-phone.png'] }, null, 2));
+  console.log(JSON.stringify({ result: 'PASS', contracts: 'ST-502 / AC-04, AC-06, AC-10, AC-33–38', browser: (await send('Browser.getVersion')).product, seats: [3, 4], layouts: ['1440×900', '1280×720', '1024×768', '768×1024', '360×800'], presentation: ['desktop keyboard and narrow touch', '200% browser reflow approximation', 'reduced motion', 'forced Canvas fallback', '40-space and history dialog focus return', 'accepted state and approved mock captures'], flows: ['setup', 'handoff', 'purchase refresh', 'lost-response retry', 'explicit auction actors', 'rent', 'jail fee and release card', 'debt liquidation and settlement', 'mortgage acquisition', 'trade confirmation', 'building and sale', 'building demand auction', 'hotel shortage liquidation', 'winner', 'offline recovery'], screenshots: ['/tmp/family-monopoly-local-desktop.png', '/tmp/family-monopoly-local-phone.png'] }, null, 2));
   }
   }
 } finally {

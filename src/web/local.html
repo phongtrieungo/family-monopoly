@@ -6,33 +6,40 @@
   <link rel="stylesheet" href="/style.css"><script type="module" src="/local.js"></script>
 </head>
 <body class="local-page">
-  <header class="masthead"><div><span class="eyebrow">CÙNG NHAU MỘT CHỖ</span><h1>Phố Nhà Mình</h1></div><span class="badge">Bản nội bộ · nội dung gốc đang thử nghiệm</span></header>
+  <header class="local-header"><h1>Phố Nhà Mình</h1><nav class="local-nav" aria-label="Ván chơi"><a href="/">Phòng chơi trên nhiều máy</a><button id="new-local" class="secondary" hidden>Ván mới</button></nav></header>
   <main>
-    <nav class="local-nav"><a href="/">Phòng chơi trên nhiều máy</a><button id="new-local" class="secondary" hidden>Ván mới</button></nav>
     <p id="local-error" role="alert" hidden></p><p id="local-connection" role="status" hidden>Mất kết nối. Đang thử đồng bộ lại…</p>
-    <section id="local-setup" class="panel entry">
+    <section id="local-setup" class="local-layout">
+      <div id="local-preview" class="local-board" aria-hidden="true"></div>
+      <div class="local-sheet">
       <span class="eyebrow">2–4 NGƯỜI · 1 MÁY</span><h2>Một bàn chơi, cả nhà cùng vui</h2>
       <p>Chọn tên cho 2–4 người. Bàn chơi sẽ hiện vị trí, tài sản và lượt của cả nhà. Không cần mã mời; mỗi người bắt đầu với 1.200 xu.</p>
       <form id="local-setup-form">
-        <label>Người chơi 1 <input name="player1" maxlength="32" required autocomplete="off"></label>
-        <label>Người chơi 2 <input name="player2" maxlength="32" required autocomplete="off"></label>
-        <label>Người chơi 3 · tùy chọn <input name="player3" maxlength="32" autocomplete="off"></label>
-        <label>Người chơi 4 · tùy chọn <input name="player4" maxlength="32" autocomplete="off"></label>
+        <label><span class="seat-1"><span class="local-piece" aria-hidden="true">✿</span> Bông hoa · Người chơi 1</span> <input name="player1" maxlength="32" required autocomplete="off"></label>
+        <label><span class="seat-2"><span class="local-piece" aria-hidden="true">◈</span> Cánh diều · Người chơi 2</span> <input name="player2" maxlength="32" required autocomplete="off"></label>
+        <label><span class="seat-3"><span class="local-piece" aria-hidden="true">♧</span> Lá non · Người chơi 3</span> · tùy chọn <input name="player3" maxlength="32" autocomplete="off"></label>
+        <label><span class="seat-4"><span class="local-piece" aria-hidden="true">◭</span> Thuyền buồm · Người chơi 4</span> · tùy chọn <input name="player4" maxlength="32" autocomplete="off"></label>
         <button id="start-local">Bắt đầu chơi chung</button>
       </form>
       <p class="local-note">Mọi người dùng chung màn hình. Trước mỗi lượt, chuyền thiết bị cho đúng người rồi xác nhận để mở thao tác. Tải lại trang để tiếp tục ván đang chơi.</p>
+      </div>
     </section>
     <section id="local-match" hidden>
       <ul id="local-players" class="local-players" aria-label="Người chơi"></ul>
       <div class="local-layout">
-        <section class="panel local-board-panel" aria-labelledby="local-board-heading">
-          <span class="eyebrow">MỘT VÒNG QUANH PHỐ</span><h2 id="local-board-heading">40 ô, nhiều câu chuyện</h2>
-          <p id="local-bank"></p><div id="local-board" class="local-board" aria-label="Bàn chơi 40 ô"></div>
-          <details id="local-space-details"><summary>Danh sách ô và tài sản</summary><ol id="local-spaces"></ol></details>
+        <section class="local-board-panel" aria-label="Bàn chơi">
+          <div id="local-board" class="local-board" aria-hidden="true"></div>
+          <div class="local-dock">
+            <div><strong id="local-holder"></strong><p id="local-bank"></p></div>
+            <div class="buttons">
+              <button id="open-local-spaces" type="button" class="secondary">Xem đủ 40 ô</button>
+              <button id="open-local-history" type="button" class="secondary">Diễn biến</button>
+            </div>
+          </div>
         </section>
-        <div class="match-side">
-          <section class="panel actions" aria-labelledby="local-turn-heading">
-            <span id="local-phase-label" class="eyebrow">ĐANG CHỜ AI?</span><h2 id="local-turn-heading" tabindex="-1"></h2><p id="local-context"></p>
+        <section class="local-sheet" id="local-sheet" aria-labelledby="local-turn-heading">
+          <div id="local-sheet-content">
+            <span id="local-phase-label" class="eyebrow"></span><h2 id="local-turn-heading" tabindex="-1"></h2><p id="local-context"></p>
             <p id="local-roll-result" class="local-roll-result"></p>
             <button id="skip-local-motion" class="secondary" type="button" hidden>Hiện kết quả ngay</button>
             <section id="local-outcome" class="local-outcome" aria-labelledby="local-outcome-heading" hidden><h3 id="local-outcome-heading">Kết quả đã xác nhận</h3><ol id="local-outcome-items"></ol></section>
@@ -49,11 +56,29 @@
               <button id="stop-local-celebration" class="secondary" type="button">Bỏ qua chúc mừng</button>
               <p id="local-celebration-message" role="status" hidden>Một ván chơi đáng nhớ · Chúc mừng cả nhà!</p>
             </section>
-          </section>
-          <section class="panel"><h2>Diễn biến</h2><ol id="local-history"></ol></section>
-        </div>
+          </div>
+          <fieldset id="local-purchase-actions" class="local-deed-actions" disabled hidden><legend class="sr-only">Mua khu đất hoặc mở đấu giá</legend></fieldset>
+        </section>
       </div>
     </section>
+    <dialog id="local-space-details" aria-labelledby="local-space-heading">
+      <header class="local-dialog-header">
+        <h2 id="local-space-heading" tabindex="-1">40 ô trong khu phố</h2>
+        <form method="dialog"><button class="secondary">Đóng</button></form>
+      </header>
+      <ol id="local-spaces"></ol>
+      <section id="local-space-detail" hidden>
+        <button id="back-local-spaces" type="button" class="secondary">Về danh sách 40 ô</button>
+        <div id="local-space-copy"></div>
+      </section>
+    </dialog>
+    <dialog id="local-history-dialog" aria-labelledby="local-history-heading">
+      <header class="local-dialog-header">
+        <h2 id="local-history-heading" tabindex="-1">Diễn biến</h2>
+        <form method="dialog"><button class="secondary">Đóng</button></form>
+      </header>
+      <ol id="local-history"></ol>
+    </dialog>
     <p id="local-announcement" class="sr-only" role="status"></p>
   </main>
 </body>
