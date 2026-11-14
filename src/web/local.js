@@ -1,5 +1,5 @@
 import { decisionControls, node } from './local-controls.js';
-import { money, cardCopy, phases, errors } from './local-vi.js';
+import { money, cardCopy, phases, errors, pieces } from './local-vi.js';
 import { createBoardView } from './local-board.bundle.js';
 const $ = (id) => document.getElementById(id);
 const read = (key) => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
@@ -16,6 +16,9 @@ let online = false;
 let syncing;
 let errorCode;
 let boardView;
+let previewView;
+let inspectedSpaceId;
+const inspectionOpen = () => Boolean(document.querySelector('.local-page dialog[open]'));
 let renderedFinished = false;
 let lastRoll = game?.lastRoll ?? null;
 const credential = (id) => game?.sessions.find((entry) => entry.seatId === id)?.session;
@@ -37,6 +40,11 @@ async function api(path, body, session) {
   try { result = await response.json(); } catch { throw new Error('Network'); }
   if (!response.ok) throw new Error(result.error ?? 'Unknown'); return result;
 }
+let boardRequest;
+function getBoard() {
+  boardRequest ??= api('/api/local/board').catch((failure) => { boardRequest = undefined; throw failure; });
+  return boardRequest;
+}
 function candidates() {
   const { turn } = state; const live = turn.seats.filter((seat) => !seat.eliminated).map((seat) => seat.id);
   if (turn.phase === 'Finished') return [];
@@ -55,10 +63,16 @@ function selectActor(id) {
   if (busy || pending || !online || !candidates().includes(id)) return;
   actorId = id; render();
 }
+function setRetryContext() {
+  $('local-retry').hidden = !pending;
+  $('retry-context').textContent = pending ? `Chưa xác nhận được thao tác của ${person(pending.actorId)}. Gửi lại dùng đúng yêu cầu đã lưu, không tạo thêm lần thanh toán.` : '';
+}
 function locks() {
+  setRetryContext();
   $('local-connection').hidden = online || !game;
   $('local-controls').hidden = state?.turn.phase === 'Finished';
   $('local-controls').disabled = state?.turn.phase === 'Finished' || busy || !online || !!pending || acknowledgedSeatId !== actorId;
+  $('local-purchase-actions').disabled = $('local-controls').disabled;
   $('local-actor').disabled = busy || !online || !!pending;
   $('confirm-handoff').disabled = busy || !online || !!pending;
   $('retry-command').disabled = busy || !online;
@@ -82,7 +96,7 @@ function auctionSubject(event) {
   // Building auctions do not carry a property ID in their settlement event.
   return 'công trình cuối';
 }
-const outcomeTypes = new Set(['StartAwarded', 'CardDrawn', 'RentPaid', 'PaymentSettled', 'BankPaid', 'AuctionStarted', 'AuctionBidAccepted', 'AuctionPassed', 'AuctionSettled', 'AuctionEndedWithoutBid']);
+const outcomeTypes = new Set(['PropertyBought', 'StartAwarded', 'CardDrawn', 'RentPaid', 'PaymentSettled', 'BankPaid', 'AuctionStarted', 'AuctionBidAccepted', 'AuctionPassed', 'AuctionSettled', 'AuctionEndedWithoutBid']);
 function renderOutcome() {
   const row = [...history].reverse().find(({ events }) => events.some(({ type }) => outcomeTypes.has(type)));
   const events = row?.events.filter(({ type }) => outcomeTypes.has(type)) ?? [];
@@ -100,6 +114,7 @@ function renderOutcome() {
 
     if (['RentPaid', 'PaymentSettled'].includes(event.type)) text += ` Số dư hiện tại · ${balances([event.from, event.to])}.`;
     if (event.type === 'BankPaid') text += ` Số dư hiện tại · ${balances([event.seatId])}.`;
+    if (event.type === 'PropertyBought') text += ` Số dư hiện tại · ${balances([event.from])}.`;
     if (event.type === 'AuctionSettled') text += ` Số dư hiện tại · ${balances([event.from])}.`;
     return node('li', text);
   });
@@ -159,33 +174,42 @@ function render({ motion } = {}) {
   const finished = state.status === 'Finished' && turn.phase === 'Finished';
   const enteringFinish = finished && !renderedFinished;
   renderedFinished = finished;
-  $('local-phase-label').textContent = finished ? 'CẢ NHÀ ĐÃ HOÀN THÀNH' : 'ĐANG CHỜ AI?';
+  $('local-phase-label').textContent = finished ? 'ĐÃ HOÀN THÀNH' : `Lượt của ${person(turn.activeSeatId)}`;
   const required = preferred(); const key = `${turn.phase}:${required}`;
   const allowed = candidates();
   if (requiredKey !== key && !['Auction', 'BuildingDemand'].includes(turn.phase)) actorId = required;
   requiredKey = key;
   if (!allowed.includes(actorId)) actorId = allowed[0];
   $('local-match').dataset.revision = state.revision;
+  previewView?.destroy(); previewView = undefined;
   $('local-setup').hidden = true; $('local-match').hidden = false; $('new-local').hidden = false;
   $('local-turn-heading').textContent = phases[turn.phase] ?? 'Đang chờ quyết định';
   $('local-bank').textContent = `Ngân hàng còn ${turn.stock.houses} nhà và ${turn.stock.hotels} khách sạn.`;
   const active = turn.seats.find((seat) => seat.id === turn.activeSeatId);
   if (lastRoll && lastRoll.seatId !== turn.activeSeatId) lastRoll = null;
-  let context = `Lượt của ${person(turn.activeSeatId)} · ${spaceName(board.spaces[active.position].id)}.`;
+  let context = `Vị trí của ${person(turn.activeSeatId)} · ${spaceName(board.spaces[active.position].id)}.`;
   if (turn.pendingDebt) context = `${person(turn.pendingDebt.from)} cần trả ${money(turn.pendingDebt.amount)} cho ${person(turn.pendingDebt.to)}. ${cardCopy[turn.pendingDebt.sourceId] ?? (turn.pendingDebt.sourceId === 'jail' ? 'Phí ra nhà chờ' : spaceName(turn.pendingDebt.sourceId))}`;
   if (turn.phase === 'Auction') context = turn.auction.kind === 'building' ? 'Công trình cuối đang được giữ cho cuộc đấu giá. Chọn rõ người đặt giá.' : `Đấu giá ${spaceName(turn.auction.spaceId)}. Chọn rõ người đặt giá hoặc bỏ lượt.`;
   if (turn.phase === 'BuildingDemand') context = 'Công trình cuối được giữ lại. Mọi người được mời cần đăng ký ô hợp lệ hoặc từ chối.';
   $('local-context').textContent = finished ? 'Ván chơi đã kết thúc. Không còn lượt hoặc quyết định cần thực hiện.' : context;
   $('local-roll-result').textContent = finished ? '' : rollText(lastRoll);
   const chooser = $('local-actor'); chooser.replaceChildren(...allowed.map((id) => { const option = node('option', person(id)); option.value = id; return option; })); chooser.value = actorId;
-  $('local-actor-label').hidden = turn.phase === 'Finished';
+  const actorLabel = $('local-actor-label');
+  actorLabel.hidden = allowed.length <= 1;
+  const core = ['AwaitRoll', 'AwaitPurchase', 'AwaitEnd'].includes(turn.phase) && actorId === turn.activeSeatId;
+  if (core) $('local-controls').after(actorLabel);
+  else $('local-handoff').before(actorLabel);
+  $('local-holder').textContent = finished ? 'Ván đã kết thúc' : acknowledgedSeatId === actorId
+    ? `Người cầm máy · ${person(actorId)}`
+    : `Chờ ${person(actorId)} nhận máy`;
   const gate = acknowledgedSeatId !== actorId && turn.phase !== 'Finished';
   $('local-handoff').hidden = !gate;
   $('handoff-heading').textContent = `Chuyền máy cho ${person(actorId)}`;
   $('confirm-handoff').textContent = `Tôi là ${person(actorId)} · tiếp tục`;
-  $('local-retry').hidden = !pending;
-  $('retry-context').textContent = pending ? `Chưa xác nhận được thao tác của ${person(pending.actorId)}. Gửi lại dùng đúng yêu cầu đã lưu, không tạo thêm lần thanh toán.` : '';
-  $('local-actions').replaceChildren(decisionControls({ state, board, actorId, submit, selectActor }));
+  const purchaseActions = $('local-purchase-actions');
+  purchaseActions.querySelectorAll('button').forEach((button) => button.remove());
+  $('local-actions').replaceChildren(decisionControls({ state, board, actorId, submit, selectActor, inspectSpace, purchaseActions }));
+  purchaseActions.hidden = !purchaseActions.querySelector('button');
   if (turn.phase !== 'Finished' && actorId !== required && allowed.includes(required) && !['Auction', 'BuildingDemand'].includes(turn.phase)) {
     const back = node('button', `Chuyền về ${person(required)} để tiếp tục lượt`); back.type = 'button'; back.addEventListener('click', () => selectActor(required)); $('local-actions').prepend(back);
   }
@@ -200,37 +224,113 @@ function render({ motion } = {}) {
     return node('li', `${person(seat.id)} · ${money(seat.cash)} · ${seat.eliminated ? 'Đã phá sản' : 'Không phá sản'}. Tài sản: ${properties.length ? properties.join('; ') : 'Không có'}.`);
   }));
   $('local-players').replaceChildren(...turn.seats.map((seat, index) => {
-    const item = node('li', '', `panel player-card${!finished && seat.id === actorId ? ' selected' : ''}`);
+    const current = !finished && seat.id === turn.activeSeatId;
+    const item = node('li', '', `player-card seat-${index + 1}${current ? ' selected' : ''}`);
+    const piece = node('span', pieces[index].icon, 'local-piece');
+    piece.setAttribute('aria-hidden', 'true');
+    const name = node('strong', person(seat.id));
     const held = (turn.retainedCards[seat.id] ?? []).map((id) => cardCopy[id]).join(' · ');
-    item.append(node('strong', `${index + 1}. ${person(seat.id)}${!finished && seat.id === turn.activeSeatId ? ' · đang đến lượt' : ''}`), node('span', money(seat.cash)), node('small', seat.eliminated ? 'Đã phá sản' : seat.jailed ? `Nhà chờ · ${seat.jailAttempts}/3 lần thử` : spaceName(board.spaces[seat.position].id)));
-    if (held) item.append(node('small', `Giấy ra: ${held}`)); return item;
+    const count = Object.values(turn.ownership).filter((owner) => owner === seat.id).length;
+    const summary = node('div', '', 'seat-summary');
+    summary.append(name, node('small', pieces[index].name, 'seat-piece-name'), node('span', money(seat.cash), 'seat-cash'),
+      node('small', `${count} tài sản`));
+    item.append(piece, summary);
+    if (current) item.append(node('small', 'đang đến lượt', 'seat-status'));
+    if (seat.eliminated || seat.jailed) item.append(node('small', seat.eliminated ? 'Đã phá sản' : `Nhà chờ · ${seat.jailAttempts}/3 lần thử`, 'seat-status'));
+    if (held) item.append(node('small', `Giấy ra: ${held}`, 'seat-status'));
+    return item;
   }));
   if (!boardView) boardView = createBoardView($('local-board'));
   boardView.render({ board, state, activeSeatId: turn.activeSeatId, person, roll: lastRoll, motion,
     onMotionChange: (playing) => { $('skip-local-motion').hidden = !playing; } });
-  $('local-spaces').replaceChildren(...board.spaces.map((space) => {
-    const owner = turn.ownership[space.id]; const level = turn.buildings[space.id] ?? 0;
-    const occupants = turn.seats.filter((seat) => !seat.eliminated && seat.position === space.position).map((seat) => person(seat.id));
-    let detail = '';
-    if (space.economy) detail = ` Giá ${money(space.economy.price)}; thuê cơ bản ${money(space.economy.rents[0])}, đủ nhóm ${money(space.economy.rents[1])}; thuê với 1–4 nhà và khách sạn: ${space.economy.rents.slice(2).map(money).join(', ')}. Xây mỗi công trình ${money(space.economy.buildingCost)}.`;
-    if (space.type === 'transit') detail = ` Giá ${money(space.price)}; thuê theo 1–4 bến: ${board.transit.rents.map(money).join(', ')}.`;
-    if (space.type === 'service') detail = ` Giá ${money(space.price)}; thuê bằng 4 hoặc 10 lần tổng một lần gieo riêng.`;
-    if (space.type === 'tax') detail = ` Nộp ${money(space.amount)}.`;
-    const item = node('li', `Ô ${space.position + 1} · ${board.copy[space.labelKey]}${space.groupId ? ' · ' + space.groupId : ''}.${occupants.length ? ` Đang ở đây: ${occupants.join(', ')}.` : ''}${!finished && space.position === active.position ? ' Vị trí của người đang đến lượt.' : ''}${detail}${owner ? ` Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : ''}${level ? ` ${level === 5 ? '1 khách sạn' : level + ' nhà'}.` : ''}`); return item;
-  }));
+  if (!$('local-spaces').childElementCount) {
+    $('local-spaces').replaceChildren(...board.spaces.map((space) => {
+      const item = node('li');
+      const trigger = node('button', `${space.position + 1}. ${spaceName(space.id)}`, 'secondary');
+      trigger.type = 'button'; trigger.dataset.spaceId = space.id;
+      trigger.addEventListener('click', () => inspectSpace(space.id, trigger));
+      item.append(trigger);
+      return item;
+    }));
+  }
+  if (inspectedSpaceId) renderSpaceDetail();
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
   renderOutcome();
   if (finished) $('local-outcome').hidden = true;
   locks();
-  if (enteringFinish) $('local-finish-heading').focus();
-  if (gate && (!wasHandoff || oldActor !== actorId)) $('handoff-heading').focus();
+  if (enteringFinish && !inspectionOpen()) $('local-finish-heading').focus();
+  if (!inspectionOpen() && gate && (!wasHandoff || oldActor !== actorId)) $('handoff-heading').focus();
   save();
 }
-async function syncNow() {
+function renderSpaceDetail() {
+  const space = board.spaces.find(({ id }) => id === inspectedSpaceId);
+  const { turn } = state;
+  const owner = turn.ownership[space.id];
+  const level = turn.buildings[space.id] ?? 0;
+  const occupants = turn.seats.filter((seat) => !seat.eliminated && seat.position === space.position).map((seat) => person(seat.id));
+  const title = `Ô ${space.position + 1} · ${spaceName(space.id)}`;
+  $('local-space-heading').textContent = title;
+  const lines = [`${space.id}${space.groupId ? ` · Nhóm ${space.groupId}` : ''}`];
+  if (occupants.length) lines.push(`Đang ở đây: ${occupants.join(', ')}.`);
+  if (space.position === turn.seats.find(({ id }) => id === turn.activeSeatId)?.position && state.status !== 'Finished') lines.push('Vị trí của người đang đến lượt.');
+  if (space.economy) {
+    lines.push(`Giá ${money(space.economy.price)} · Xây mỗi công trình ${money(space.economy.buildingCost)}.`);
+    const stages = ['Thuê cơ bản', 'Đủ nhóm', '1 nhà', '2 nhà', '3 nhà', '4 nhà', 'Khách sạn'];
+    lines.push(...space.economy.rents.map((rent, index) => `${stages[index]} · ${money(rent)}`));
+  }
+  if (space.type === 'transit') lines.push(`Giá ${money(space.price)} · Thuê theo 1–4 bến: ${board.transit.rents.map(money).join(', ')}.`);
+  if (space.type === 'service') lines.push(`Giá ${money(space.price)} · Thuê bằng ${board.service.multipliers.join(' hoặc ')} lần tổng một lần gieo riêng.`);
+  if (space.type === 'tax') lines.push(`Nộp ${money(space.amount)}.`);
+  const special = { start: 'Nhận xu khi đến hoặc đi qua quảng trường theo kết quả lượt.', rest: 'Dừng chân, không mất phí.',
+    jail: 'Ghé thăm hoặc ở nhà chờ, tùy theo tình trạng người chơi.', 'go-to-jail': 'Đến nhà chờ.',
+    deck: space.deckId === 'chance' ? 'Rút thẻ Bước ngoặt.' : 'Rút thẻ Chuyện xóm mình.' };
+  if (special[space.type]) lines.push(special[space.type]);
+  if (owner || space.economy || space.price) lines.push(owner ? `Chủ: ${person(owner)}. ${turn.mortgages[space.id] ? 'Đang thế chấp.' : 'Chưa thế chấp.'}` : 'Chưa có chủ.');
+  if (level) lines.push(level === 5 ? '1 khách sạn.' : `${level} nhà.`);
+  $('local-space-copy').replaceChildren(...lines.map((line) => node('p', line)));
+}
+function showSpaceList() {
+  const previous = inspectedSpaceId;
+  inspectedSpaceId = undefined;
+  $('local-spaces').hidden = false;
+  $('local-space-detail').hidden = true;
+  $('local-space-heading').textContent = '40 ô trong khu phố';
+  const trigger = Array.from($('local-spaces').querySelectorAll('button')).find(({ dataset }) => dataset.spaceId === previous);
+  (trigger ?? $('local-space-heading')).focus();
+}
+function inspectSpace(id, trigger) {
+  const dialog = $('local-space-details');
+  inspectedSpaceId = id;
+  $('local-spaces').hidden = true;
+  $('local-space-detail').hidden = false;
+  $('back-local-spaces').hidden = !dialog.open;
+  renderSpaceDetail();
+  if (!dialog.open) openInspection(dialog, $('local-space-heading'), trigger);
+  else $('local-space-heading').focus();
+}
+function openInspection(dialog, heading, trigger) {
+  dialog.showModal();
+  heading.focus();
+  dialog.addEventListener('close', () => {
+    if (dialog.id === 'local-space-details') inspectedSpaceId = undefined;
+    if (trigger.isConnected && !trigger.matches(':disabled')) trigger.focus();
+    else if (!$('local-handoff').hidden) $('handoff-heading').focus();
+    else $('local-turn-heading').focus();
+  }, { once: true });
+}
+$('open-local-spaces').addEventListener('click', (event) => {
+  openInspection($('local-space-details'), $('local-space-heading'), event.currentTarget);
+  showSpaceList();
+});
+$('back-local-spaces').addEventListener('click', showSpaceList);
+$('open-local-history').addEventListener('click', (event) => {
+  openInspection($('local-history-dialog'), $('local-history-heading'), event.currentTarget);
+});
+async function syncNow({ animate = true } = {}) {
   if (!game) return;
   let resynced = false;
   try {
-    board ??= await api('/api/local/board');
+    board ??= await getBoard();
     const session = game.sessions[0].session;
     let result;
     try { result = await api(`/api/local/sync?since=${state?.revision ?? 0}`, undefined, session); }
@@ -257,7 +357,7 @@ async function syncNow() {
             lastRoll = { seatId: rolled.seatId, dice: rolled.dice, fromPosition: previous.position,
               toPosition: current.position, forcedJail,
               startAward: row.events.find((event) => event.type === 'StartAwarded' && event.seatId === rolled.seatId)?.amount };
-            if ((previous.position === current.position || forcedJail || expected === current.position) &&
+            if (animate && !pending && (previous.position === current.position || forcedJail || expected === current.position) &&
                 !matchMedia('(prefers-reduced-motion: reduce)').matches) motion = lastRoll;
           }
         } else if (lastRoll && state.turn.activeSeatId !== lastRoll.seatId) lastRoll = null;
@@ -270,19 +370,28 @@ async function syncNow() {
     locks();
   } catch (failure) { online = false; if (failure.message !== 'Network' || pending) error(failure.message); else error(); locks(); }
 }
-function sync() { syncing ??= syncNow().finally(() => { syncing = undefined; }); return syncing; }
-async function sendPending() {
+function sync(options) { syncing ??= syncNow(options).finally(() => { syncing = undefined; }); return syncing; }
+async function sendPending({ retry = false } = {}) {
   if (!pending || busy || !online) return;
+  if (retry) acknowledgedSeatId = undefined;
   busy = true; locks(); error();
+  let accepted = false;
   try {
     await api('/api/local/command', pending.command, credential(pending.actorId));
-    pending = null; save();
+    accepted = true; pending = null; save();
   } catch (failure) {
-    if (failure.message !== 'Network') { pending = null; save(); }
+    if (failure.message !== 'Network') {
+      if (failure.message === 'ResyncRequired') acknowledgedSeatId = undefined;
+      pending = null; save();
+    }
     else online = false;
     error(failure.message);
   } finally {
-    await sync(); busy = false; render(); locks();
+    const before = state;
+    await sync({ animate: accepted }); busy = false;
+    if (retry || accepted || before !== state || errorCode === 'ResyncRequired') render();
+    locks();
+    if (inspectionOpen()) return;
     if (!$('local-handoff').hidden) $('handoff-heading').focus(); else if (state.turn.phase === 'Finished') $('local-finish-heading').focus(); else $('local-turn-heading').focus();
   }
 }
@@ -308,7 +417,7 @@ $('stop-local-celebration').addEventListener('click', () => {
   $('stop-local-celebration').hidden = true;
   $('local-finish-heading').focus();
 });
-$('retry-command').addEventListener('click', sendPending);
+$('retry-command').addEventListener('click', () => { void sendPending({ retry: true }); });
 $('local-setup-form').addEventListener('submit', async (event) => {
   event.preventDefault(); if (busy) return; busy = true; locks(); error();
   const names = [...new FormData(event.currentTarget).values()].map((name) => name.trim()).filter(Boolean);
@@ -318,16 +427,20 @@ $('local-setup-form').addEventListener('submit', async (event) => {
     const result = await api('/api/local/create', creation);
     game = { sessions: result.sessions }; state = result.snapshot; history = []; lastRoll = null; pending = null; acknowledgedSeatId = undefined; requiredKey = undefined;
     save(); sessionStorage.removeItem('local-creation');
-    board ??= await api('/api/local/board'); online = true; render(); await sync();
+    board ??= await getBoard(); online = true; render(); await sync();
   } catch (failure) { error(failure.message); }
   finally { busy = false; locks(); }
 });
 $('new-local').addEventListener('click', () => {
-  if (busy || (state?.status !== 'Finished' && !confirm('Bắt đầu ván mới? Ván hiện tại sẽ không còn được mở từ trang này.'))) return;
+  if (busy || !confirm('Bắt đầu ván mới? Ván hiện tại sẽ không còn được mở từ trang này.')) return;
   sessionStorage.removeItem('local-game'); sessionStorage.removeItem('local-command'); sessionStorage.removeItem('local-creation'); location.reload();
 });
 const creation = read('local-creation');
 if (creation && !game) creation.names.forEach((name, index) => { $('local-setup-form').elements[`player${index + 1}`].value = name; });
 if (state && board) render();
+if (!game) {
+  previewView = createBoardView($('local-preview'));
+  void getBoard().then((previewBoard) => previewView?.render({ board: previewBoard })).catch(() => {});
+}
 await sync();
 setInterval(() => { if (!busy && game) sync(); }, 1000);

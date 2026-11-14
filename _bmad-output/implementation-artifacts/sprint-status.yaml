@@ -1,7 +1,7 @@
 # Tracks EPIC-002 and EPIC-005; stable ST numbers remain numeric story components.
 # Tracker keys preserve each ST number as the numeric story component.
 generated: 11-06-2026 22:34
-last_updated: 11-08-2026 17:18
+last_updated: 2026-11-14
 project: family-monopoly
 project_key: FAMILY-MONOPOLY
 tracking_system: file-system
@@ -19,7 +19,7 @@ development_status:
   epic-2-retrospective: optional
   epic-5: in-progress
   5-501-game-ui-visual-contract-and-mockup-approval: done
-  5-502-playable-table-and-core-turn: backlog
+  5-502-playable-table-and-core-turn: review
   5-503-cards-auctions-and-transaction-feedback: backlog
   5-504-portfolio-trade-and-recovery: backlog
   5-505-finish-and-complete-game-acceptance: backlog

@@ -2,7 +2,7 @@
 
 ## EPIC-005 visual proposal
 
-The owner approved a cohesive illustrated 2.5D Vietnamese neighborhood table direction on 2026-11-08. ST-501 / B-18 produces the [design contract](design/game-ui/DESIGN.md), [experience contract](design/game-ui/EXPERIENCE.md), [cited research](design/game-ui/RESEARCH.md) and [isolated interactive mockup](../design/game-ui/index.html). Owner approved this UI on 2026-11-08; ST-501 is complete, and production migration remains a separate ST-502 slice. The existing behavior below remains the shipped baseline; the mock does not replace it or close B-09 human gates.
+The owner approved a cohesive illustrated 2.5D Vietnamese neighborhood table direction on 2026-11-08. ST-501 / B-18 produces the [design contract](design/game-ui/DESIGN.md), [experience contract](design/game-ui/EXPERIENCE.md), [cited research](design/game-ui/RESEARCH.md) and [isolated interactive mockup](../design/game-ui/index.html). The owner approved the mock on 2026-11-08. ST-502 brings the approved direction to shared-browser play. B-09 human gates remain open.
 
 | View | Desktop | Mobile |
 | --- | --- | --- |
@@ -23,6 +23,19 @@ The local browser client polls for an authorized snapshot and committed events b
 
 ## B-10 shared-browser local client
 
-The [B-09 review](playtest-review.md) records accessibility findings and remaining checks. The [local-play page](local-play.md) accepts 2–4 names, renders the authored board and offers full-match decisions. It names the person holding the device and requires an explicit handoff before their actions. Auctions and building demand expose a person selector. Debt and acquisition prompts identify the responsible seat. Property management and trade forms show amounts before submission. On narrow screens, action controls precede the board and detailed space list.
+The [B-09 review](playtest-review.md) records accessibility findings and remaining checks. The [local-play page](local-play.md) accepts 2–4 names, renders the authored board and offers full-match decisions. It names the person holding the device and requires an explicit handoff before their actions. Auctions and building demand expose a person selector. Debt and acquisition prompts identify the responsible seat. Property management and trade forms show amounts before submission. On narrow screens, the board sits above the internally scrollable decision sheet. Native dialogs provide the complete 40-space list and accepted history.
 
 Session storage holds the local seat bundle, latest public snapshot and any unresolved command. Reload restores the pending decision and requires handoff again. The retry control submits the original command and actor after a lost response. Unrevealed deck order is never stored in the client.
+
+## ST-502 local table
+
+The oblique board projects accepted dice, movement, ownership and development. Seat summaries identify the active seat, cash and property count. The dock names the confirmed device holder or the person expected to receive the device. The purchase deed shows the full name, group, price, basic rent and resulting cash. Accepted purchase and rent remain visible as text. The native list identifies all 40 spaces and opens full deed or space details, including occupants and the active seat location. Escape or Close returns focus to the opener.
+
+| Flow | Preserved scenario evidence |
+| --- | --- |
+| Setup, named handoff, accepted purchase and rent | [AC-33–34](features/local-play.feature), [AC-04/06](features/turn.feature) |
+| Refresh, retry, receipt replay and handoff | [AC-36](features/local-play.feature) |
+| Card, auction, trade, jail, building, debt, acquisition and finish | [AC-35/37](features/local-play.feature), [authored full-match cases](features/full-match.feature) |
+| Keyboard, phone and authoritative result equivalents | [AC-38](features/local-play.feature), [AC-10](features/interface.feature) |
+
+See the [ST-502 verification record](../_bmad-output/implementation-artifacts/spec-5-502-playable-table-and-core-turn.md#verification-evidence).
