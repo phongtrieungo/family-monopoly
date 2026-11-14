@@ -36,6 +36,12 @@ export const cardCopy = {
 export const phases = { AwaitRoll: 'Gieo xúc xắc', AwaitPurchase: 'Mua hay đấu giá?', AwaitEnd: 'Kết thúc lượt', Auction: 'Đấu giá', AwaitDebt: 'Giải quyết khoản nợ', AwaitAcquisition: 'Chọn cách nhận tài sản thế chấp', BuildingDemand: 'Ai muốn xây công trình cuối?', BuildingOffer: 'Xác nhận xây công trình', Finished: 'Ván chơi đã kết thúc' };
 export const errors = { InvalidLocalSetup: 'Cần 2–4 tên khác nhau, mỗi tên không quá 32 ký tự.', CommandIdConflict: 'Yêu cầu đã lưu có nội dung khác. Hãy kiểm tra trước khi thử lại.', Network: 'Không nhận được phản hồi. Kiểm tra kết nối rồi gửi lại thao tác đã lưu.', ResyncRequired: 'Ván chơi vừa thay đổi. Đã đồng bộ lại; hãy kiểm tra rồi chọn thao tác mới.', Unauthorized: 'Không khôi phục được phiên chơi. Có thể máy chủ đã đổi kho lưu. Hãy bắt đầu ván mới.', ActionRejected: 'Thao tác không hợp lệ ở trạng thái hiện tại. Kiểm tra tiền, quyền sở hữu, thứ tự xây hoặc bán và quyết định đang chờ.', Unknown: 'Không thể thực hiện thao tác. Hãy thử lại.' };
 
+export const recoveryCopy = {
+  cash: 'Tiền đang có',
+  stock: 'Kho công trình của ngân hàng',
+  syncing: 'Đang đồng bộ. Các lựa chọn sẽ mở lại khi có trạng thái mới nhất.',
+};
+
 export const transactionCopy = {
   drawnCard: 'Thẻ đã rút',
   unknownCard: 'Rút một thẻ.',
