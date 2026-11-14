@@ -224,10 +224,32 @@ a { color: #215a4c; }
   #local-preview { max-width: 12rem; margin-inline: auto; }
 }
 
-.local-outcome { padding: 1rem; margin-block: 1rem; background: #f3f7ed; border: 1px solid #b8c9a5; border-radius: .75rem; overflow-wrap: anywhere; }
-.local-outcome h3 { margin-top: 0; }
-.local-outcome ol { padding-left: 1.25rem; margin-bottom: 0; }
-.local-outcome li + li { margin-top: .6rem; }
+#local-context:empty { display: none; }
+.local-auction, .local-outcome { margin-block: .7rem; overflow-wrap: anywhere; }
+.local-auction h3 { font-size: 1.3rem; }
+.local-auction #local-auction-leader { margin-block: .25rem; font-weight: 650; }
+.local-auction-actions { display: grid; gap: .45rem; }
+.local-auction-actions > .local-note { margin: 0; }
+.local-bid-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .45rem; }
+.local-bid-form button { min-width: 0; }
+.local-outcome ol { display: grid; gap: .45rem; padding: 0; margin: 0; list-style: none; }
+.local-outcome li { margin: 0; }
+.local-feedback {
+  padding: .6rem .7rem;
+  background: #f8f3e3;
+  border: 1px solid var(--line);
+  border-left: 4px solid #a5894a;
+  border-radius: .75rem;
+}
+.local-feedback h3 { margin-bottom: .2rem; font-size: 1.05rem; }
+.local-feedback p { margin-bottom: 0; }
+.local-feedback p + p { margin-top: .2rem; }
+.local-feedback-card { background: #fbefd3; border-left-color: #a7652e; }
+.local-card-copy { font: 1.15rem/1.35 Georgia, serif; }
+.local-feedback-payment { background: #eff3e5; border-left-color: #52795a; }
+.local-feedback-auction { background: #f5edda; border-left-color: #907038; }
+.local-feedback-balances { color: var(--muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+.local-outcome .local-card-effects { margin-top: .45rem; }
 
 /* Original CSS celebration: presentation only; the complete result is always readable. */
 .local-finish { border: 2px solid #287e78; border-radius: 16px; padding: 1rem; background: #f4f8e9; }

@@ -22,6 +22,7 @@ const numeric = (id, max, value = 0, min = 0) => {
   const input = node('input'); Object.assign(input, { id, type: 'number', min, max, step: 1, required: true, value, inputMode: 'numeric' }); return input;
 };
 const selected = (select) => [...select.selectedOptions].map(({ value }) => value);
+export const auctionMinimum = ({ highBid }) => (highBid?.amount ?? 9) + 1;
 
 // Availability is presentation only; the server validates every selected intent.
 export function propertyOptions(turn, board, actorId) {
@@ -108,15 +109,23 @@ export function decisionControls({ state, board, actorId, submit, selectActor, i
     root.append(act('ChooseMortgage', `Giữ thế chấp · trả ${money(interest)}`, { choice: 'keep' }), act('ChooseMortgage', `Giải chấp · trả ${money(principal + interest)}`, { choice: 'release' }));
   }
   if (phase === 'Auction' && turn.auction.eligibleSeatIds.includes(actorId)) {
-    const { highBid } = turn.auction; const min = (highBid?.amount ?? 9) + 1;
-    root.append(node('p', highBid ? `${person(highBid.seatId)} dẫn đầu với ${money(highBid.amount)}. Giá đặt tối thiểu ${money(min)}. Bỏ lượt là quyết định cuối cho cuộc đấu giá này.` : 'Giá mở đầu 10 xu. Bỏ lượt là quyết định cuối cho cuộc đấu giá này.'));
+    const { highBid } = turn.auction;
+    const min = auctionMinimum(turn.auction);
+    const actions = node('div', '', 'local-auction-actions');
     if (actor.cash >= min) {
-      const form = node('form'); const input = numeric('local-bid', actor.cash, min, min);
+      const form = node('form', '', 'local-bid-form'); const input = numeric('local-bid', actor.cash, min, min);
       const send = node('button', 'Đặt giá'); send.dataset.command = 'Bid';
       form.append(wrap('Giá đặt (xu)', input), send);
-      form.addEventListener('submit', (event) => { event.preventDefault(); submit('Bid', { amount: input.valueAsNumber }); }); root.append(form);
+      form.addEventListener('submit', (event) => { event.preventDefault(); submit('Bid', { amount: input.valueAsNumber }); });
+      actions.append(form);
+    } else {
+      actions.append(node('p', 'Không đủ tiền để đặt giá tối thiểu.', 'local-note'));
     }
-    root.append(act('Pass', 'Bỏ lượt đấu giá', {}, highBid?.seatId !== actorId));
+    const leading = highBid?.seatId === actorId;
+    const pass = act('Pass', 'Bỏ lượt đấu giá', {}, !leading);
+    pass.className = 'secondary';
+    actions.append(pass, node('p', leading ? 'Người dẫn đầu không thể bỏ lượt.' : 'Bỏ lượt là quyết định cuối cho cuộc đấu giá này.', 'local-note'));
+    root.append(actions);
   }
   if (phase === 'BuildingDemand' && turn.buildingDemand.eligibleSeatIds.includes(actorId) && !Object.hasOwn(turn.buildingDemand.responses, actorId)) {
     const targets = assets.filter(({ canBuild, level }) => canBuild && turn.buildingDemand.token === (level === 4 ? 'hotels' : 'houses'));
