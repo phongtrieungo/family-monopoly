@@ -289,7 +289,8 @@ async function assertCanvasFallback(url) {
   await assertInspection(canvas, true);
 }
 try {
-  server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createRequestHandler(rooms, { localRooms }) });
+  const port = Number(process.env.LOCAL_ACCEPTANCE_PORT ?? 0);
+  server = Bun.serve({ hostname: '127.0.0.1', port, fetch: createRequestHandler(rooms, { localRooms }) });
   await startChrome(); desktop = await tab(1440, false, !st203Only, 900);
   await setup(desktop, new URL('/local', server.url).href);
   const desktopDice = [...dice];
@@ -439,6 +440,16 @@ try {
         assert.equal(await desktop.run("document.querySelector('#local-final-seats').textContent"), summary);
         assert.match(await desktop.run("document.querySelector('#local-announcement').textContent"), /thắng ván chơi/);
         assert.equal(await desktop.run("document.querySelector('#local-winner').classList.contains('celebrating')"), false);
+        const sound = '#local-sound-toggle';
+        const pressed = "document.querySelector('#local-sound-toggle').getAttribute('aria-pressed')";
+        assert.equal(await desktop.run(pressed), 'false');
+        // Simulate unavailable audio and ensure the control leaves the result intact.
+        await desktop.run('window.AudioContext = undefined; window.webkitAudioContext = undefined');
+        await desktop.click(sound);
+        await desktop.wait(pressed + " === 'true'");
+        await desktop.click(sound);
+        await desktop.wait(pressed + " === 'false'");
+        assert.deepEqual((await snapshot(desktop)).turn, finished.turn);
         assert.equal(await desktop.run('document.documentElement.scrollWidth'), touch ? 360 : 1440);
         assert.ok(await desktop.run("document.querySelector('#celebrate-local').getBoundingClientRect().height >= 44"));
         const capture = `family-monopoly-st206-${count}-${touch ? 'phone' : 'desktop'}.png`;
@@ -530,9 +541,9 @@ try {
 
     await seed((turn) => { turn.phase = 'AwaitPurchase'; turn.purchase = { spaceId: 'VN-S01' }; turn.seats[0].position = 1; turn.queue = [{ kind: 'finishRoll', seatId: ids[0] }]; });
     await desktop.click(control('Decline')); await desktop.wait(enabled('Bid'));
-    assert.match(await outcome(), /10 xu/);
+    assert.match(await desktop.run("document.querySelector('#local-auction-terms').textContent"), /10 xu/);
     await choose(desktop, ids[2]); await desktop.click(control('Bid'));
-    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('Chi dẫn đầu')");
+    await desktop.wait("document.querySelector('#local-auction-leader').textContent.includes('Chi dẫn đầu')");
     assert.equal(await desktop.run("document.querySelector('#local-bid').min"), '11');
     assert.equal(await desktop.run("document.querySelector('[data-command=Pass]').disabled"), true);
     for (const id of [ids[0], ids[1], ids[3]]) { await choose(desktop, id); await desktop.click(control('Pass')); await desktop.wait("!document.querySelector('#local-controls').disabled || !document.querySelector('#local-handoff').hidden"); }
@@ -546,7 +557,7 @@ try {
       turn.auction = { kind: 'building', targets: { [ids[0]]: 'VN-S01', [ids[1]]: 'VN-S06' }, eligibleSeatIds: [ids[0], ids[1]], highBid: null, resumePhase: 'AwaitEnd' };
     });
     await choose(desktop, ids[1]); await desktop.click(control('Bid'));
-    await desktop.wait("document.querySelector('#local-outcome').textContent.includes('Bình dẫn đầu')");
+    await desktop.wait("document.querySelector('#local-auction-leader').textContent.includes('Bình dẫn đầu')");
     await choose(desktop, ids[0]); await desktop.click(control('Pass'));
     await desktop.wait("document.querySelector('#local-outcome').textContent.includes('thắng đấu giá')");
     const buildingState = await snapshot(desktop);
@@ -676,7 +687,7 @@ try {
     await desktop.click(control('OfferTrade'));
     await desktop.wait("!document.querySelector('.trade-review').hidden");
     const review = await desktop.run("document.querySelector('.trade-review').textContent");
-    assert.match(review, /VN-S01|phố|đang thế chấp/); assert.match(review, /Bình chọn giữ/); assert.match(review, /4 xu/);
+    assert.match(review, /Ngõ hoa Hà Nội.*đang thế chấp/i); assert.match(review, /Bình chọn giữ/); assert.match(review, /4 xu/);
     await desktop.click(".trade-review button.secondary"); assert.equal(await desktop.run("document.querySelector('.trade-review').hidden"), true);
     await desktop.run(`document.querySelector('#trade-cash-${ids[1]}').value = 22`);
     await desktop.click(control('OfferTrade')); await desktop.wait("!document.querySelector('.trade-review').hidden");
@@ -692,7 +703,7 @@ try {
     assert.match(targetTerms, /thế chấp/); assert.match(targetTerms, /giải chấp/);
     await desktop.click(control('AcceptTrade')); await desktop.wait(enabled('ChooseMortgage'));
     const acquisition = await desktop.run("document.querySelector('#local-actions').textContent");
-    assert.match(acquisition, /trả ngay/); assert.match(acquisition, /giải chấp ngay/);
+    assert.match(acquisition, /trả ngay/); assert.match(acquisition, /giải chấp ngay/i);
     await desktop.click(control('ChooseMortgage')); await desktop.wait("!document.querySelector('#local-handoff').hidden"); await handoff(desktop); await desktop.wait(enabled('EndTurn'));
     const traded = await snapshot(desktop); assert.equal(traded.turn.ownership['VN-S01'], ids[1]);
     assert.equal(traded.turn.seats[1].cash, 74);
@@ -738,7 +749,7 @@ try {
   await desktop.wait(enabled('Buy')); await assertCommittedRoll(desktop);
   const purchase = await snapshot(desktop); assert.equal(purchase.turn.phase, 'AwaitPurchase');
   if (st502Evidence) {
-    assert.match(await desktop.run("document.querySelector('.local-deed').textContent"), /Sân nhỏ Hà Nội.*Giá mua.*Tiền đang có.*Còn lại nếu mua.*Tiền thuê cơ bản/);
+    assert.match(await desktop.run("document.querySelector('#local-actions .local-deed').textContent"), /Sân nhỏ Hà Nội.*Giá mua.*Tiền đang có.*Còn lại nếu mua.*Tiền thuê cơ bản/);
     await assertTableLayouts(desktop, 'Buy', 'purchase');
     await desktop.click('.local-deed > button');
     assert.equal(await desktop.run("document.activeElement.id"), 'local-space-heading');
@@ -814,7 +825,7 @@ try {
   await handoff(desktop); await desktop.click(control('Roll')); await desktop.wait(enabled('Decline'));
   await desktop.click(control('Decline')); await desktop.wait(enabled('Bid'));
   await choose(desktop, ids[2]); await desktop.click(control('Bid'));
-  await desktop.wait("document.querySelector('#local-context').textContent.includes('Đấu giá') && document.querySelector('#local-history').textContent.includes('10 xu')");
+  await desktop.wait("document.querySelector('#local-turn-heading').textContent.includes('Đấu giá') && document.querySelector('#local-history').textContent.includes('10 xu')");
   for (const id of [ids[0], ids[1], ids[3]]) { await choose(desktop, id); await desktop.click(control('Pass')); await desktop.wait("!document.querySelector('#local-controls').disabled || !document.querySelector('#local-handoff').hidden"); }
   await handoff(desktop); await desktop.wait(enabled('EndTurn'));
   const auction = await snapshot(desktop); assert.equal(auction.turn.activeSeatId, ids[1]); assert.equal(auction.turn.ownership['VN-S05'], ids[2]); assert.equal(auction.turn.seats[2].cash, 1190);

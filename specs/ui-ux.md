@@ -64,3 +64,13 @@ Implementation and unrun checks are recorded in the [ST-503 spec](../_bmad-outpu
 | Rejection, saved command retry, reconnect, focus and responsive native controls | [AC-34, AC-36–38](features/local-play.feature) |
 
 The existing ST-205 browser path in [local-play-acceptance.js](../scripts/local-play-acceptance.js) remains available. ST-504 implementation and pending checks are recorded in the [story spec](../_bmad-output/implementation-artifacts/spec-5-504-portfolio-trade-and-recovery.md#verification).
+
+## ST-505 finish and complete-game acceptance
+
+| Local UI surface | Existing acceptance |
+| --- | --- |
+| Confirmed winner after all mortgage decisions, final seat summaries, and retained history | [AC-23](features/full-match.feature), [AC-36–37](features/local-play.feature) |
+| Optional sound, reduced motion, and reachable native controls | [AC-38](features/local-play.feature) |
+| Shared-device complete-game checkpoint journeys for two and four seats | [AC-33–38](features/local-play.feature) |
+
+See the [ST-505 story and verification plan](../_bmad-output/implementation-artifacts/spec-5-505-finish-and-complete-game-acceptance.md#verification).
