@@ -51,3 +51,8 @@ The local decision sheet presents the published card and its accepted effects, p
 ## ST-504 delivery record · 2026-11-14
 
 The local decision sheet presents property state and action previews, both directions of a trade, the named debtor or mortgage recipient, jail release consequences, and the stock and responses for a last-building decision. [The UI mapping](../ui-ux.md#st-504-portfolio-trade-and-recovery) connects each surface to existing scenarios. [Verification and review](../../_bmad-output/implementation-artifacts/spec-5-504-portfolio-trade-and-recovery.md#verification) remain pending at the owner's direction.
+
+
+## ST-505 delivery record
+
+The local table retains the confirmed winner, final seat summaries and history, with optional sound and a bounded celebration. The complete-game browser checkpoint journeys and local regressions passed. See the [verification evidence](../../_bmad-output/implementation-artifacts/spec-5-505-finish-and-complete-game-acceptance.md#verification-evidence). B-09 human review gates remain open.

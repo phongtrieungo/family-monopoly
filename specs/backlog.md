@@ -40,3 +40,4 @@ The owner selected ST-201 as B-11 and ST-202 as B-12 on 2026-11-06. ST-202 is co
 - [EPIC-003: Private full-match play across devices](epics/EPIC-003.md) — deferred until after the local experience.
 - [EPIC-004: Wider-playtest and hosting readiness](epics/EPIC-004.md) — deferred and subject to audience and deployment decisions.
 - [EPIC-005: One living neighborhood table](epics/EPIC-005.md) — authorized redesign sequence; ST-501 visual proposal is current. ST-502–505 remain proposed until their individual contracts and the visual checkpoint are approved.
+- [EPIC-006: Phaser canvas game table](epics/EPIC-006.md) — planned shared-browser follow-up for Phaser controls, an illustrated 2D board and cell-by-cell movement. ST-601 preview is in review. ST-602–616 await individual implementation selection. See the [decision migration stories and dependencies](epics/EPIC-006-decisions.md).

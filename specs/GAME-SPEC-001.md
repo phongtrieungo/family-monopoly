@@ -35,6 +35,7 @@ Run host and guest in separate browser contexts at desktop and phone widths. Joi
 - [Private multiplayer rooms](rooms.md)
 - [UI and accessibility](ui-ux.md)
 - [Shared-browser local play](local-play.md)
+- [Planned Phaser canvas game table](epics/EPIC-006.md)
 - [Feature requirements and Gherkin](features/README.md)
 - [Architecture decisions](adr/README.md)
 - [Implementation backlog and test strategy](backlog.md)

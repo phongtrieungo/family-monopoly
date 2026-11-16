@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bàn chơi khu phố · ST-601</title>
+<style>
+* { box-sizing: border-box }
+body { margin: 0; background: #efdfc5; color: #163a33; font-family: Georgia, serif }
+canvas { display: block }
+#table { width: 100%; min-width: 1280px; height: max(720px, 100dvh) }
+.assistive, #name { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; font-size: 16px }
+</style>
+<main id="table" aria-label="Bàn chơi mẫu"></main>
+<label class="assistive" for="name">Tên người chơi</label>
+<input id="name" lang="vi" aria-describedby="status" autocomplete="off" hidden>
+<div class="assistive" id="controls" role="group" aria-label="Điều khiển bàn chơi"></div>
+<p class="assistive" id="status" role="status"></p>
+<script src="../../node_modules/phaser/dist/phaser.min.js"></script>
+<script type="module" src="preview.js"></script>
+</html>
