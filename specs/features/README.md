@@ -10,5 +10,6 @@
 | F-07 Renderer comparison | Compare server-driven Phaser and React/SVG presentation in an isolated synthetic spike. | ST-201 · [renderer spike](renderer-spike.feature) · AC-39–40 |
 | F-06 Shared-browser local play | One device hosts 2–4 seats in the authored full match. | US-08 · [local play](local-play.feature) · AC-33–38 |
 | F-08 Phaser canvas table (planned) | Play the full local match in Phaser on an illustrated 2D board and follow confirmed movement cell by cell. | US-03, US-05, US-06, US-08 · [EPIC-006](../epics/EPIC-006.md) · [AC-41–46](phaser-table.feature) |
+| F-09 Table effects and audio (planned) | Present accepted local outcomes with optional effects and independent sound/music controls. | [EPIC-007](../epics/EPIC-007.md) · [AC-47–53](table-effects.feature) |
 
 AC-01–10 describe the synthetic prototype. AC-11 onward describe the internal vn-original-v1 profile. AC-11–32 have domain and room coverage recorded in the [B-08 traceability map](../full-match-implementation.md). Shared-browser full-profile coverage is recorded in [B-10 local play](../local-play.md); physical-device and wider playtest review remain open.
