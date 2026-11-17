@@ -13,6 +13,7 @@ import { createRequestHandler } from '../src/web/server.js';
 const directory = mkdtempSync(join(tmpdir(), 'family-monopoly-acceptance-'));
 const st203Only = process.argv.includes('--st-203');
 const st204Only = process.argv.includes('--st-204');
+const st602Only = process.argv.includes('--st-602');
 const st206Only = process.argv.includes('--st-206');
 const st205Only = process.argv.includes('--st-205');
 const dice = [[6, 6], [5, 5], [4, 4], [3, 3], [1, 2], [2, 3], [1, 2], [6, 6]];
@@ -162,10 +163,45 @@ async function choose(page, id) {
   await page.run(`(() => { const select = document.querySelector('#local-actor'); select.value = ${JSON.stringify(id)}; select.dispatchEvent(new Event('change')); })()`);
   await handoff(page);
 }
+async function assertPainted(page, panelSelector, controlSelector) {
+  const paintVisible = `(() => {
+    const panel = document.querySelector(${JSON.stringify(panelSelector)});
+    const control = document.querySelector(${JSON.stringify(controlSelector)});
+    const canvas = panel?.querySelector('canvas');
+    if (!canvas || !panel.classList.contains('local-panel-painted') || !control) return false;
+    const bounds = canvas.getBoundingClientRect();
+    const rect = control.getBoundingClientRect();
+    if (!bounds.width || !bounds.height || !rect.width || !rect.height) return false;
+    const x = Math.floor((rect.left + 6 - bounds.left) * canvas.width / bounds.width);
+    const y = Math.floor((rect.top + rect.height / 2 - bounds.top) * canvas.height / bounds.height);
+    return canvas.getContext('2d').getImageData(x, y, 1, 1).data[3] > 0;
+  })()`;
+  await page.wait(paintVisible);
+}
 async function setup(page, url, touch = false, count = 4) {
   const previousOrigin = await page.run('performance.timeOrigin');
   await page.call('Page.navigate', { url });
   await page.wait(`performance.timeOrigin !== ${previousOrigin} && document.querySelector('#local-setup-form') && document.readyState === 'complete'`);
+  if (st602Only && !touch) {
+    await assertPainted(page, '#local-setup-sheet', '#start-local');
+    await page.run(`(() => {
+      const field = document.querySelector('[name=player1]');
+      field.value = 'Nguyễn Thị Minh Anh Nguyễn Thị';
+      field.style.width = '160px';
+      field.focus();
+      field.setSelectionRange(field.value.length, field.value.length);
+    })()`);
+    await page.key('End', 'End', 35);
+    await page.wait("document.querySelector('[name=player1]').scrollLeft > 0");
+    await page.run(`(() => {
+      const field = document.querySelector('[name=player1]');
+      field.setSelectionRange(8, 20);
+      field.dispatchEvent(new Event('select', { bubbles: true }));
+    })()`);
+    await Bun.sleep(80);
+    await shot(page, 'family-monopoly-st602-name-edit.png');
+    await page.run("document.querySelector('[name=player1]').style.removeProperty('width')");
+  }
   await page.run(`['An', 'Bình', 'Chi', 'Dũng'].slice(0, ${count}).forEach((name, i) => document.querySelector('[name=player' + (i + 1) + ']').value = name)`);
   if (touch) await page.tap('#start-local');
   else { await page.run("document.querySelector('#start-local').focus()"); await page.key('Enter', 'Enter', 13); }
@@ -314,7 +350,66 @@ try {
   assert.equal(await desktop.run("document.querySelector('#local-board canvas') !== null"), true);
   assert.equal(await desktop.run("document.querySelectorAll('#local-spaces li').length"), 40);
   assert.equal(await desktop.run("document.querySelector('[data-command=Roll]').disabled || document.querySelector('#local-controls').disabled"), true);
-  if (st206Only) {
+  if (st602Only) {
+    const url = new URL('/local', server.url).href;
+    const sizes = [[1280, 720], [1920, 1080], [2560, 1440], [3840, 2160]];
+    for (const [index, [width, height]] of sizes.entries()) {
+      const page = await tab(width, false, true, height);
+      const seats = index % 2 ? 4 : 2;
+      dice.unshift(...Array.from({ length: seats }, (_, seat) => [1, seat + 1]));
+      await setup(page, url, false, seats);
+      await page.wait("document.querySelector('#local-board')?.dataset.revision");
+      await assertPainted(page, '#local-handoff', '#confirm-handoff');
+      assert.equal(await page.run(`(() => {
+        const visible = selector => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return rect.width > 0 && rect.top >= 0 && rect.bottom <= innerHeight && rect.right <= innerWidth;
+        };
+        return scrollY === 0 && visible('#local-board canvas') && visible('#confirm-handoff');
+      })()`), true, `Board and handoff fit before scrolling at ${width}×${height}`);
+      await shot(page, `family-monopoly-st602-${width}-handoff.png`);
+      const before = await snapshot(page);
+      const tile = await page.run(`(() => {
+        const canvas = document.querySelector('#local-board canvas');
+        const bounds = canvas.getBoundingClientRect();
+        return { x: bounds.left + bounds.width * 637.5 / 755, y: bounds.top + bounds.height * 702.5 / 755 };
+      })()`);
+      await page.call('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', clickCount: 1, ...tile });
+      await page.call('Input.dispatchMouseEvent', { type: 'mouseReleased', button: 'left', clickCount: 1, ...tile });
+      await page.wait("document.querySelector('#local-space-details[open] canvas') !== null");
+      assert.match(await page.run("document.querySelector('#local-space-copy').textContent"), /VN-S01/);
+      await page.key('Escape', 'Escape', 27);
+      await page.wait("!document.querySelector('#local-space-details').open");
+      await page.click('[data-inspect-seat]');
+      await page.wait("document.querySelector('#local-seat-dialog[open] canvas') !== null");
+      assert.match(await page.run("document.querySelector('#local-seat-detail').textContent"), /1.200/);
+      await page.key('Escape', 'Escape', 27);
+      await page.wait("!document.querySelector('#local-seat-dialog').open && Boolean(document.activeElement.dataset.inspectSeat)");
+      await handoff(page);
+      assert.deepEqual(await snapshot(page), before);
+      const other = before.turn.seats.find(({ id }) => id !== before.turn.activeSeatId);
+      await choose(page, other.id);
+      assert.match(await page.run("document.querySelector('#handoff-context').textContent"), /Lượt của/);
+      assert.deepEqual(await snapshot(page), before);
+      const focusedSeat = await page.run(`(() => {
+        const button = document.querySelector('[data-inspect-seat]');
+        button.focus();
+        return button.dataset.inspectSeat;
+      })()`);
+      const records = store.read();
+      const room = records.find(({ id }) => id === before.roomId);
+      room.revision += 1;
+      room.history.push({ revision: room.revision, events: [] });
+      store.write(records);
+      await page.wait(`Number(document.querySelector('#local-match').dataset.revision) === ${room.revision}`);
+      assert.equal(await page.run("document.activeElement.dataset.inspectSeat"), focusedSeat);
+      await page.call('Page.reload');
+      await page.wait("document.querySelector('#local-board')?.dataset.revision");
+      assert.equal((await snapshot(page)).roomId, before.roomId);
+      assert.equal(await page.run("document.querySelectorAll('#local-spaces button').length"), 40);
+      console.log(`ST-602 ${width}×${height}, ${seats} seats: passed`);
+    }
+  } else if (st206Only) {
     const evidence = [];
     const browser = await send('Browser.getVersion');
     // Independent saved checkpoints, never a claim of an uninterrupted match.

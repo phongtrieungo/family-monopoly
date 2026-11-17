@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
+export { createPanelView } from "./local-panel.js";
 
 // Canvas is only a projection. Every full label and occupant remains in the HTML space list.
 // Original neighborhood geometry adapted from the approved ST-501 mock.
-const WIDTH = 880;
-const HEIGHT = 615;
-const DICE_Y = 340;
+const WIDTH = 755;
+const HEIGHT = 755;
+const DICE_Y = 348;
 const PALETTE = [0xb75c45, 0x347b79, 0x7a6991, 0x9b7828];
 const GROUPS = [0xbd9474, 0x84acb4, 0xb392ab, 0xd9aa6a, 0x92aa79, 0x72a99b, 0xb4a261, 0x7996b6];
-const project = (x, y) => ({ x: 156 + x * .97 - y * .17, y: 31 + x * .115 + y * .65 });
+const project = (x, y) => ({ x: x + 20, y: y + 20 });
 const corners = (x, y, w, h) => [project(x, y), project(x + w, y), project(x + w, y + h), project(x, y + h)];
 
 function polygon(graphics, points, color, line) {
@@ -92,7 +93,7 @@ function decorateNeighborhood(scene, graphics) {
   const brand = project(359, 208);
   scene.add.text(brand.x, brand.y, 'Phố Nhà Mình', {
     fontFamily: 'Georgia, serif', fontSize: '32px', color: '#34593f', fontStyle: 'bold',
-  }).setOrigin(.5).setAngle(7);
+  }).setOrigin(.5);
 }
 
 function tilePosition(index) {
@@ -179,7 +180,7 @@ export function createBoardView(parent) {
   api = {
     render(args) {
       if (!scene) { pendingRender = args; return; }
-      const { board, state, activeSeatId, person, roll, motion, onMotionChange = () => {} } = args ?? {};
+      const { board, state, activeSeatId, person, roll, motion, onInspect, onMotionChange = () => {} } = args ?? {};
       // A UI-only render at the same revision must preserve accepted motion and Skip.
       if (tween && parent.dataset.revision === String(state?.revision)) return;
       finishMotion(); motionChanged = onMotionChange; motionChanged(false);
@@ -207,6 +208,11 @@ export function createBoardView(parent) {
           }).setOrigin(.5);
         }
         if (!space) continue;
+        if (onInspect) {
+          scene.add.zone(x + 52.5, y + 52.5, 65, 65)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerup', () => onInspect(space.id));
+        }
         const title = board.copy[space.labelKey] ?? space.id;
         const label = project(x + 33, y + 44);
         scene.add.text(label.x, label.y, title.split(' ').slice(0, 2).join(' '), {
@@ -219,9 +225,13 @@ export function createBoardView(parent) {
         }).setOrigin(.5);
         const owner = seatIndices.get(turn?.ownership[space.id]);
         if (owner !== undefined) {
-          floor(graphics, x + 10, y + 65, 45, 4, PALETTE[owner]);
+          floor(graphics, x + 10, y + 59, 45, 4, PALETTE[owner]);
           const marker = project(x + 56, y + 34);
           paintToken(scene.add.graphics().setPosition(marker.x, marker.y), owner, .46);
+          if (turn.mortgages[space.id]) {
+            const lock = project(x + 10, y + 32);
+            scene.add.text(lock.x, lock.y, '◆', { fontSize: '12px', color: '#744437' }).setOrigin(.5);
+          }
           const level = turn.buildings[space.id] ?? 0;
           if (level === 5) shop(graphics, project(x + 47, y + 23), .40, 0xeab19a, PALETTE[owner]);
           else for (let house = 0; house < level; house++) {
@@ -247,7 +257,10 @@ export function createBoardView(parent) {
       for (const seat of turn.seats.filter((entry) => !entry.eliminated)) {
         const point = tokenPoint(seat.position, seat.id);
         const piece = scene.add.graphics();
-        paintToken(piece, seatIndices.get(seat.id));
+        if (!finished && seat.id === activeSeatId) {
+          piece.lineStyle(2, 0xfff8df).strokeCircle(0, -9, 15);
+        }
+        paintToken(piece, seatIndices.get(seat.id), 0.86);
         tokens.set(seat.id, scene.add.container(point.x, point.y, [piece]).setDepth(3));
       }
       const centerText = finished ? `Ván đã kết thúc · ${person(turn.winnerSeatId)} thắng!` : `Đến lượt: ${person(activeSeatId)}`;
@@ -255,7 +268,7 @@ export function createBoardView(parent) {
         rollingDice = roll.dice.map((value, index) => {
           const face = scene.add.graphics();
           drawDie(face, value);
-          const x = 410 + index * 60;
+          const x = 347 + index * 60;
           return { container: scene.add.container(x, DICE_Y, [face]).setDepth(2), face, value, x };
         });
       }

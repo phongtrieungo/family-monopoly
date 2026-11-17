@@ -84,7 +84,7 @@ a { color: #215a4c; }
 .local-note { color: var(--muted); font-size: .875rem; margin-block: .4rem; }
 .local-layout { display: grid; gap: .75rem; align-items: start; }
 .local-board-panel, .local-sheet { min-width: 0; }
-.local-board { display: block; position: relative; width: 100%; aspect-ratio: 880 / 615; }
+.local-board { display: block; position: relative; width: 100%; aspect-ratio: 1; }
 .local-board canvas { display: block; position: absolute; inset: 0; width: 100% !important; height: 100% !important; margin: 0 !important; }
 .local-sheet, .local-dock, .local-page dialog {
   background: var(--paper);
@@ -220,7 +220,7 @@ a { color: #215a4c; }
   .local-layout { grid-template-columns: minmax(0, 1fr) clamp(19rem, 28vw, 23rem); }
   #local-match .local-sheet { max-height: calc(100dvh - 11.75rem); }
   .local-board {
-    max-width: min(100%, max(16rem, calc((100dvh - 17rem) * 880 / 615)));
+    max-width: min(100%, max(16rem, calc(100dvh - 17rem)));
     margin-inline: auto;
   }
 }
@@ -228,7 +228,7 @@ a { color: #215a4c; }
   #local-match .local-sheet { max-height: calc(100dvh - 13rem); }
 }
 @media (max-width: 55.99rem) {
-  .local-board-panel .local-board { max-width: max(16rem, calc((100dvh - 31rem) * 880 / 615)); margin-inline: auto; }
+  .local-board-panel .local-board { max-width: max(16rem, calc(100dvh - 31rem)); margin-inline: auto; }
   #local-sheet:has(.local-deed-actions:not([hidden])) { max-height: min(40dvh, max(14rem, 100dvh - 50rem)); }
 }
 @media (max-width: 40rem) {
@@ -289,3 +289,15 @@ a { color: #215a4c; }
 .local-finish.celebrating { animation: family-celebration 800ms ease-in-out; }
 @keyframes family-celebration { 50% { box-shadow: 0 0 0 8px #e4bf6355; } }
 @media (prefers-reduced-motion: reduce) { .local-finish.celebrating { animation: none; border-color: #b68422; box-shadow: 0 0 0 4px #e4bf6355; } }
+
+/* The native controls provide layout and semantics beneath the Phaser paint. */
+#local-setup-sheet, #local-handoff, #local-player-panel { position: relative; }
+.local-panel-paint { position: absolute; inset: 0; pointer-events: none; }
+.local-panel-paint canvas { display: block; }
+.local-panel-painted > :not(.local-panel-paint) { opacity: 0; }
+#local-seat-dialog { max-height: 80vh; width: min(34rem, calc(100% - 2rem)); }
+#local-setup-error { color: #96392e; }
+.local-page dialog { position: fixed; }
+.local-panel-paint canvas { position: absolute; top: 0; left: 0; }
+.local-panel-painted > .local-dialog-header { position: static; }
+.player-card > [data-inspect-seat] { grid-column: 1 / -1; min-height: 44px; }

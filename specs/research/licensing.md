@@ -42,3 +42,7 @@ The spike's geometric board, tokens, page layout, card treatment, copy, screensh
 ## ST-502 production visual provenance
 
 Codex adapted the ST-501 shallow projection, paths, pond, plaza, shop fronts, tree canopies and four piece silhouettes to Phaser in `src/web/local-board.js`. The deed storefront and table materials are original CSS in `src/web/style.css`. The application uses system fonts and the existing authored space names, prices and rent schedules. Internal source review covers the geometry and cached local bundle. No third-party imagery was imported or traced. The existing Phaser and dependency notices remain applicable.
+
+## ST-602 Phaser table provenance
+
+The square board and panel paint in `src/web/local-board.js` and `src/web/local-panel.js` adapt project-authored ST-501 and ST-601 geometry. The implementation uses the existing authored board, system fonts and the pinned Phaser library. B-09 reviews remain open.

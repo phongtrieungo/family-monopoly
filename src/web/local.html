@@ -11,9 +11,10 @@
     <p id="local-error" role="alert" hidden></p><p id="local-connection" role="status" hidden>Mất kết nối. Đang thử đồng bộ lại…</p>
     <section id="local-setup" class="local-layout">
       <div id="local-preview" class="local-board" aria-hidden="true"></div>
-      <div class="local-sheet">
+      <div id="local-setup-sheet" class="local-sheet">
       <span class="eyebrow">2–4 NGƯỜI · 1 MÁY</span><h2>Một bàn chơi, cả nhà cùng vui</h2>
       <p>Chọn tên cho 2–4 người. Bàn chơi sẽ hiện vị trí, tài sản và lượt của cả nhà. Không cần mã mời; mỗi người bắt đầu với 1.200 xu.</p>
+      <p id="local-setup-error" role="alert" hidden></p>
       <form id="local-setup-form">
         <label><span class="seat-1"><span class="local-piece" aria-hidden="true">✿</span> Bông hoa · Người chơi 1</span> <input name="player1" maxlength="32" required autocomplete="off"></label>
         <label><span class="seat-2"><span class="local-piece" aria-hidden="true">◈</span> Cánh diều · Người chơi 2</span> <input name="player2" maxlength="32" required autocomplete="off"></label>
@@ -25,7 +26,7 @@
       </div>
     </section>
     <section id="local-match" hidden>
-      <ul id="local-players" class="local-players" aria-label="Người chơi"></ul>
+      <div id="local-player-panel"><ul id="local-players" class="local-players" aria-label="Người chơi"></ul></div>
       <div class="local-layout">
         <section class="local-board-panel" aria-label="Bàn chơi">
           <div id="local-board" class="local-board" aria-hidden="true"></div>
@@ -51,7 +52,7 @@
             </section>
             <section id="local-outcome" class="local-outcome" aria-label="Kết quả đã xác nhận" hidden><ol id="local-outcome-items"></ol></section>
             <label id="local-actor-label"><span>Người đang cầm máy</span><select id="local-actor"></select></label>
-            <div id="local-handoff" class="handoff"><h3 id="handoff-heading" tabindex="-1"></h3><p>Chuyền máy cho người này trước khi tiếp tục.</p><button id="confirm-handoff"></button></div>
+            <div id="local-handoff" class="handoff"><h3 id="handoff-heading" tabindex="-1"></h3><p id="handoff-context">Chuyền máy cho người này trước khi tiếp tục.</p><button id="confirm-handoff"></button></div>
             <div id="local-retry" class="handoff" hidden><p id="retry-context" tabindex="-1"></p><button id="retry-command">Gửi lại thao tác đã lưu</button></div>
             <p id="local-decision-lock" class="local-note" role="status"></p>
             <fieldset id="local-controls" class="local-controls" disabled><legend class="sr-only">Thao tác cho người đang cầm máy</legend><div id="local-actions"></div></fieldset>
@@ -86,6 +87,13 @@
         <form method="dialog"><button class="secondary">Đóng</button></form>
       </header>
       <ol id="local-history"></ol>
+    </dialog>
+    <dialog id="local-seat-dialog" aria-labelledby="local-seat-heading">
+      <header class="local-dialog-header">
+        <h2 id="local-seat-heading" tabindex="-1"></h2>
+        <form method="dialog"><button class="secondary">Đóng</button></form>
+      </header>
+      <div id="local-seat-detail"></div>
     </dialog>
     <p id="local-announcement" class="sr-only" role="status"></p>
   </main>

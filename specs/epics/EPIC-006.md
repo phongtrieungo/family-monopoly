@@ -91,3 +91,5 @@ The following enhancements are proposals for later story selection. They have no
 Prioritize contextual explanation and resume summary after the first auction checkpoint. Their data already exists in the planned decision projections and accepted history.
 
 ST-601 review materials are available in the [Phaser table preview](../../design/phaser-table/README.md) and [proposed renderer decision](../adr/ADR-008-local-canvas-controls.md). Visual and manual accessibility acceptance are pending.
+
+ST-602 production table and inspection are implemented and in review. See the [implementation and verification record](../../_bmad-output/implementation-artifacts/spec-6-602-local-phaser-table.md#implementation-and-verification-evidence).

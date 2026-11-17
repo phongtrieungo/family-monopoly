@@ -1,6 +1,6 @@
 import { auctionMinimum, decisionControls, node } from './local-controls.js';
 import { money, cardCopy, phases, errors, pieces, transactionCopy, recoveryCopy } from './local-vi.js';
-import { createBoardView } from './local-board.bundle.js';
+import { createBoardView, createPanelView } from './local-board.bundle.js';
 const $ = (id) => document.getElementById(id);
 const read = (key) => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
 let game = read('local-game');
@@ -32,7 +32,15 @@ function save() {
   if (game) sessionStorage.setItem('local-game', JSON.stringify({ ...game, board, snapshot: state, history, lastRoll }));
   if (pending) sessionStorage.setItem('local-command', JSON.stringify(pending)); else sessionStorage.removeItem('local-command');
 }
-function error(code) { errorCode = code; $('local-error').hidden = !code; $('local-error').textContent = code ? errors[code] ?? errors.Unknown : ''; }
+function error(code) {
+  errorCode = code;
+  const message = code ? errors[code] ?? errors.Unknown : '';
+  for (const id of ['local-error', 'local-setup-error']) {
+    const line = $(id);
+    line.hidden = !code || (id === 'local-error' ? !game : !!game);
+    line.textContent = message;
+  }
+}
 function playEffect(kind) {
   if (!soundEnabled) return;
   try {
@@ -307,6 +315,9 @@ function render({ motion } = {}) {
   const gate = acknowledgedSeatId !== actorId && turn.phase !== 'Finished';
   $('local-handoff').hidden = !gate;
   $('handoff-heading').textContent = `Chuyền máy cho ${person(actorId)}`;
+  $('handoff-context').textContent = finished ? '' : actorId === turn.activeSeatId
+    ? 'Chuyền máy cho người này trước khi tiếp tục.'
+    : `Lượt của ${person(turn.activeSeatId)}. ${person(actorId)} cần quyết định.`;
   $('confirm-handoff').textContent = `Tôi là ${person(actorId)} · tiếp tục`;
   const purchaseActions = $('local-purchase-actions');
   purchaseActions.querySelectorAll('button').forEach((button) => button.remove());
@@ -327,6 +338,7 @@ function render({ motion } = {}) {
     });
     return node('li', `${person(seat.id)} · ${money(seat.cash)} · ${seat.eliminated ? 'Đã phá sản' : 'Không phá sản'}. Tài sản: ${properties.length ? properties.join('; ') : 'Không có'}.`);
   }));
+  const focusedSeat = document.activeElement?.dataset.inspectSeat;
   $('local-players').replaceChildren(...turn.seats.map((seat, index) => {
     const current = !finished && seat.id === turn.activeSeatId;
     const item = node('li', '', `player-card seat-${index + 1}${current ? ' selected' : ''}`);
@@ -338,14 +350,28 @@ function render({ motion } = {}) {
     const summary = node('div', '', 'seat-summary');
     summary.append(name, node('small', pieces[index].name, 'seat-piece-name'), node('span', money(seat.cash), 'seat-cash'),
       node('small', `${count} tài sản`));
-    item.append(piece, summary);
+    const inspect = node('button', 'Xem tài sản', 'secondary');
+    inspect.type = 'button';
+    inspect.dataset.inspectSeat = seat.id;
+    inspect.setAttribute('aria-label', `Xem tài sản của ${person(seat.id)}`);
+    inspect.addEventListener('click', () => {
+      inspectedSeatId = seat.id;
+      renderSeatDetail();
+      openInspection($('local-seat-dialog'), $('local-seat-heading'), inspect);
+    });
+    item.append(piece, summary, inspect);
     if (current) item.append(node('small', 'đang đến lượt', 'seat-status'));
     if (seat.eliminated || seat.jailed) item.append(node('small', seat.eliminated ? 'Đã phá sản' : `Nhà chờ · ${seat.jailAttempts}/3 lần thử`, 'seat-status'));
     if (held) item.append(node('small', `Giấy ra: ${held}`, 'seat-status'));
     return item;
   }));
+  if (focusedSeat) {
+    Array.from($('local-players').querySelectorAll('[data-inspect-seat]'))
+      .find(({ dataset }) => dataset.inspectSeat === focusedSeat)?.focus({ preventScroll: true });
+  }
   if (!boardView) boardView = createBoardView($('local-board'));
   boardView.render({ board, state, activeSeatId: turn.activeSeatId, person, roll: lastRoll, motion,
+    onInspect: (id) => inspectSpace(id, $('open-local-spaces')),
     onMotionChange: (playing) => { $('skip-local-motion').hidden = !playing; } });
   if (!$('local-spaces').childElementCount) {
     $('local-spaces').replaceChildren(...board.spaces.map((space) => {
@@ -358,6 +384,7 @@ function render({ motion } = {}) {
     }));
   }
   if (inspectedSpaceId) renderSpaceDetail();
+  if ($('local-seat-dialog').open) renderSeatDetail();
   $('local-history').replaceChildren(...history.flatMap(({ events }) => events.map(describe)).filter(Boolean).slice(-12).reverse().map((message) => node('li', message)));
   renderAuction();
   renderOutcome();
@@ -367,6 +394,26 @@ function render({ motion } = {}) {
   if (!inspectionOpen() && gate && (!wasHandoff || oldActor !== actorId)) $('handoff-heading').focus();
   save();
 }
+let inspectedSeatId;
+function renderSeatDetail() {
+  const { turn } = state;
+  const seat = turn.seats.find(({ id }) => id === inspectedSeatId);
+  if (!seat) return;
+  $('local-seat-heading').textContent = person(seat.id);
+  const lines = [`Tiền: ${money(seat.cash)}.`];
+  if (seat.eliminated) lines.push('Đã phá sản.');
+  else if (seat.jailed) lines.push('Đang ở nhà chờ.');
+  const holdings = board.spaces.filter(({ id }) => turn.ownership[id] === seat.id);
+  if (!holdings.length) lines.push('Chưa có tài sản.');
+  for (const { id } of holdings) {
+    const level = turn.buildings[id] ?? 0;
+    const mortgage = turn.mortgages[id] ? ' · Đang thế chấp' : '';
+    const buildings = level === 5 ? ' · 1 khách sạn' : level ? ` · ${level} nhà` : '';
+    lines.push(`${spaceName(id)}${mortgage}${buildings}`);
+  }
+  $('local-seat-detail').replaceChildren(...lines.map((line) => node('p', line)));
+}
+
 function renderSpaceDetail() {
   const space = board.spaces.find(({ id }) => id === inspectedSpaceId);
   const { turn } = state;
@@ -418,7 +465,10 @@ function openInspection(dialog, heading, trigger) {
   heading.focus();
   dialog.addEventListener('close', () => {
     if (dialog.id === 'local-space-details') inspectedSpaceId = undefined;
-    if (trigger.isConnected && !trigger.matches(':disabled')) trigger.focus();
+    const seatTrigger = Array.from($('local-players').querySelectorAll('[data-inspect-seat]'))
+      .find(({ dataset }) => dataset.inspectSeat === trigger.dataset.inspectSeat);
+    if (seatTrigger) seatTrigger.focus();
+    else if (trigger.isConnected && !trigger.matches(':disabled')) trigger.focus();
     else if (!$('local-handoff').hidden) $('handoff-heading').focus();
     else $('local-turn-heading').focus();
   }, { once: true });
@@ -539,9 +589,19 @@ $('stop-local-celebration').addEventListener('click', () => {
   $('local-finish-heading').focus();
 });
 $('retry-command').addEventListener('click', () => { void sendPending({ retry: true }); });
+$('local-setup-form').noValidate = true;
 $('local-setup-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); if (busy) return; busy = true; locks(); error();
-  const names = [...new FormData(event.currentTarget).values()].map((name) => name.trim()).filter(Boolean);
+  event.preventDefault(); if (busy) return; error();
+  const fields = [...new FormData(event.currentTarget).values()].map((name) => name.trim());
+  const names = fields.filter(Boolean);
+  if (!fields[0] || !fields[1] || new Set(names.map((name) => name.toLocaleLowerCase('vi'))).size !== names.length) {
+    const line = $('local-setup-error');
+    line.textContent = 'Nhập tên khác nhau cho 2–4 người chơi.';
+    line.hidden = false;
+    event.currentTarget.querySelector('input').focus();
+    return;
+  }
+  busy = true; locks();
   const saved = read('local-creation'); const creation = saved && JSON.stringify(saved.names) === JSON.stringify(names) ? saved : { names, requestId: crypto.randomUUID() };
   sessionStorage.setItem('local-creation', JSON.stringify(creation));
   try {
@@ -559,6 +619,24 @@ $('new-local').addEventListener('click', () => {
 const creation = read('local-creation');
 if (creation && !game) creation.names.forEach((name, index) => { $('local-setup-form').elements[`player${index + 1}`].value = name; });
 if (state && board) render();
+const setupPanel = !game && createPanelView($('local-setup-sheet'),
+  '.eyebrow, h2, p, label > span, input, button');
+createPanelView($('local-handoff'), 'h3, p, button');
+createPanelView($('local-player-panel'), '.player-card, .local-piece, .seat-summary strong, .seat-summary small, .seat-cash, .seat-status, button');
+for (const id of ['local-space-details', 'local-history-dialog', 'local-seat-dialog']) {
+  const dialog = $(id);
+  let view;
+  // Wait until the dialog has a layout. Reopening gets a fresh presentation.
+  new MutationObserver(() => {
+    if (dialog.open) view ??= createPanelView(dialog, 'h2, button, #local-history li, #local-space-copy p, #local-seat-detail p');
+    else { view?.destroy(); view = undefined; }
+  }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+}
+if (setupPanel) new MutationObserver((_, observer) => {
+  if (!$('local-setup').hidden) return;
+  setupPanel.destroy();
+  observer.disconnect();
+}).observe($('local-setup'), { attributes: true, attributeFilter: ['hidden'] });
 if (!game) {
   previewView = createBoardView($('local-preview'));
   void getBoard().then((previewBoard) => previewView?.render({ board: previewBoard })).catch(() => {});
